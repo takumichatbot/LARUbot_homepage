@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="ja" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LARUbot - AIチャットボットで業務効率化</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .hero-bg {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-bg::before {
+            content: '';
+            position: absolute;
+            top: -200px;
+            left: -200px;
+            width: 500px;
+            height: 500px;
+            background: rgba(52, 152, 219, 0.1);
+            border-radius: 50%;
+            animation: move-bg-1 20s infinite linear;
+        }
+        .hero-bg::after {
+            content: '';
+            position: absolute;
+            bottom: -150px;
+            right: -150px;
+            width: 400px;
+            height: 400px;
+            background: rgba(46, 204, 113, 0.1);
+            border-radius: 50%;
+            animation: move-bg-2 15s infinite linear;
+        }
+        @keyframes move-bg-1 {
+            0% { transform: translate(0, 0); }
+            50% { transform: translate(200px, 200px); }
+            100% { transform: translate(0, 0); }
+        }
+        @keyframes move-bg-2 {
+            0% { transform: translate(0, 0); }
+            50% { transform: translate(-100px, -100px); }
+            100% { transform: translate(0, 0); }
+        }
+        .text-gradient {
+            background: linear-gradient(45deg, #3498db, #2ecc71);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* アニメーション用スタイル */
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+        .animate-fade-in-up {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* チャットボットコンテナのスタイル */
+        .chat-container {
+            position: fixed;
+            bottom: 24px; /* 6 * 4px = 24px */
+            right: 24px; /* 6 * 4px = 24px */
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+        .chat-iframe-container {
+            width: 350px;
+            height: 450px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            overflow: hidden;
+            margin-bottom: 16px; /* 4 * 4px = 16px */
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        }
+        .chat-button {
+            width: 56px;
+            height: 56px;
+            background-color: #3498db;
+            color: white;
+            border-radius: 9999px; /* rounded-full */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease-in-out;
+        }
+        .chat-button:hover {
+            background-color: #2980b9;
+        }
+        .hidden-transition {
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+        }
+
+        /* FAQアコーディオン用スタイル */
+        .faq-item {
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .faq-question {
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 0;
+            font-weight: 600;
+        }
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+            padding: 0 0;
+        }
+        .faq-answer.open {
+            max-height: 200px; /* 適切な高さに設定 */
+            padding-bottom: 1.5rem;
+        }
+        .faq-icon {
+            transition: transform 0.3s ease-out;
+        }
+        .faq-icon.rotate {
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <!-- ヘッダー -->
+    <header class="fixed top-0 left-0 right-0 z-50 bg-white shadow-lg py-4">
+        <div class="container mx-auto px-4 md:px-6 flex justify-between items-center">
+            <a href="#" class="flex items-center space-x-3 text-2xl font-bold text-gray-800">
+                <!-- 更新されたロゴ画像 -->
+                <img src="https://placehold.co/150x50/ffffff/000000?text=LARUbot" alt="LARUbot Logo" class="h-8 md:h-10">
+            </a>
+            <nav class="hidden md:block">
+                <ul class="flex space-x-6">
+                    <li><a href="#about" class="text-gray-600 hover:text-blue-500 transition-colors duration-300 font-medium">サービス概要</a></li>
+                    <li><a href="#ui" class="text-gray-600 hover:text-blue-500 transition-colors duration-300 font-medium">UI対応</a></li>
+                    <li><a href="#plans" class="text-gray-600 hover:text-blue-500 transition-colors duration-300 font-medium">料金プラン</a></li>
+                    <li><a href="#flow" class="text-gray-600 hover:text-blue-500 transition-colors duration-300 font-medium">ご利用の流れ</a></li>
+                    <!-- FAQへのリンクを追加 -->
+                    <li><a href="#faq" class="text-gray-600 hover:text-blue-500 transition-colors duration-300 font-medium">よくある質問</a></li>
+                    <li><a href="#contact-form" class="text-white bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-full transition-colors duration-300 font-medium">お問い合わせ</a></li>
+                </ul>
+            </nav>
+            <button id="mobile-menu-button" class="md:hidden text-2xl text-gray-600">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        <!-- モバイルメニュー -->
+        <div id="mobile-menu" class="hidden md:hidden absolute top-full left-0 right-0 bg-white shadow-lg py-4">
+            <ul class="flex flex-col space-y-4 px-4">
+                <li><a href="#about" class="text-gray-800 hover:text-blue-500 transition-colors duration-300 font-medium">サービス概要</a></li>
+                <li><a href="#ui" class="text-gray-800 hover:text-blue-500 transition-colors duration-300 font-medium">UI対応</a></li>
+                <li><a href="#plans" class="text-gray-800 hover:text-blue-500 transition-colors duration-300 font-medium">料金プラン</a></li>
+                <li><a href="#flow" class="text-gray-800 hover:text-blue-500 transition-colors duration-300 font-medium">ご利用の流れ</a></li>
+                <!-- FAQへのリンクを追加 -->
+                <li><a href="#faq" class="text-gray-800 hover:text-blue-500 transition-colors duration-300 font-medium">よくある質問</a></li>
+                <li><a href="#contact-form" class="text-white bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-full transition-colors duration-300 font-medium">お問い合わせ</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <!-- ヒーローセクション -->
+    <section class="hero-bg text-white pt-32 pb-24 md:pt-48 md:pb-32">
+        <div class="container mx-auto px-4 md:px-6 text-center animate-on-scroll">
+            <h1 class="text-4xl md:text-6xl font-extrabold leading-tight tracking-tight mb-4">
+                業務効率化を<br class="md:hidden">AIで<span class="text-gradient">圧倒的に実現</span>
+            </h1>
+            <p class="text-lg md:text-xl font-light mb-8 max-w-2xl mx-auto">
+                24時間顧客によりそうおまかせAIチャットボット<br>手頃な価格で、あなたのビジネスに革新を。
+            </p>
+            <a href="#contact-form" class="inline-block bg-white text-blue-600 hover:bg-gray-200 transition-colors duration-300 font-bold py-3 px-8 rounded-full shadow-lg">
+                無料相談はこちらから
+            </a>
+        </div>
+    </section>
+
+    <!-- サービス概要 -->
+    <section id="about" class="py-16 md:py-24 animate-on-scroll">
+        <div class="container mx-auto px-4 md:px-6">
+            <div class="flex flex-col lg:flex-row items-center lg:space-x-12">
+                <div class="lg:w-1/2 mb-8 lg:mb-0">
+                    <h2 class="text-3xl md:text-4xl font-bold mb-4 leading-tight">
+                        手軽に、そして強力に<br>顧客対応を変える。
+                    </h2>
+                    <p class="text-lg text-gray-600 mb-6">
+                        LARUbotは、あなたのウェブサイトに簡単に埋め込めるAIチャットボットサービスです。複雑な設定は不要。たった数ステップで、業務効率化と顧客満足度向上を同時に実現します。
+                    </p>
+                    <ul class="space-y-4 text-gray-700">
+                        <li class="flex items-center space-x-3">
+                            <i class="fas fa-check-circle text-blue-500 text-xl"></i>
+                            <span>コード不要で簡単設置、すぐに運用開始</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <i class="fas fa-check-circle text-blue-500 text-xl"></i>
+                            <span>豊富なカスタマイズ機能でブランドに合わせる</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <i class="fas fa-check-circle text-blue-500 text-xl"></i>
+                            <span>顧客データに基づき、常に進化するAI</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="lg:w-1/2 flex justify-center">
+                    <!-- プレースホルダー画像を設置 -->
+                    <img src="/images/業務効率化をAIで実現.PNG" alt="サービス概要イメージ" class="rounded-xl shadow-2xl">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 顧客の声セクション -->
+    <section class="py-16 md:py-24 bg-gray-100 animate-on-scroll">
+        <div class="container mx-auto px-4 md:px-6 text-center">
+            <h2 class="text-3xl md:text-4xl font-bold mb-12">
+                導入企業様の声
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- 顧客事例1 -->
+                <div class="bg-white p-8 rounded-xl shadow-lg flex flex-col items-center text-center">
+                    <img src="https://placehold.co/80x80/e5e7eb/4b5563?text=Logo" alt="会社ロゴ" class="w-20 h-20 rounded-full mb-4">
+                    <p class="text-gray-600 italic mb-4">"LARUbot導入後、問い合わせ対応時間が半分になりました。お客様からも「すぐに回答がもらえる」と好評です。"</p>
+                    <div class="font-bold">株式会社A</div>
+                    <div class="text-sm text-gray-500">営業部 マネージャー</div>
+                </div>
+            
+            </div>
+        </div>
+    </section>
+
+    <!-- UI対応セクション -->
+    <section id="ui" class="py-16 md:py-24 animate-on-scroll">
+        <div class="container mx-auto px-4 md:px-6">
+            <div class="flex flex-col-reverse lg:flex-row items-center lg:space-x-12">
+                <div class="lg:w-1/2 flex justify-center mb-8 lg:mb-0">
+                    
+                </div>
+                <div class="lg:w-1/2">
+                    <h2 class="text-3xl md:text-4xl font-bold mb-4 leading-tight">
+                        貴社のブランドに合わせた<br>カスタムUIにも対応
+                    </h2>
+                    <p class="text-lg text-gray-600 mb-6">
+                        提供される標準のチャットボットUIだけでなく、お客様のウェブサイトのデザインやブランドイメージに合わせて、完全にカスタマイズされたUIを開発することも可能です。これにより、シームレスなユーザー体験を提供し、ブランド価値を高めます。
+                    </p>
+                    <ul class="space-y-4 text-gray-700">
+                        <li class="flex items-center space-x-3">
+                            <i class="fas fa-palette text-blue-500 text-xl"></i>
+                            <span>デザインから実装までを一貫してサポート</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <i class="fas fa-code text-blue-500 text-xl"></i>
+                            <span>貴社のシステムとの連携も柔軟に対応</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- こんな問題ありませんか？ -->
+    <section class="py-16 md:py-24 animate-on-scroll">
+        <div class="container mx-auto px-4 md:px-6 text-center">
+            <h2 class="text-3xl md:text-4xl font-bold mb-12 leading-tight">
+                こんな課題、抱えていませんか？
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="bg-white p-8 rounded-xl shadow-lg transition-transform hover:scale-105 duration-300">
+                    <i class="fas fa-headset text-5xl text-blue-500 mb-4"></i>
+                    <h3 class="text-xl font-bold mb-2">問い合わせ対応の負担</h3>
+                    <p class="text-gray-600">ルーティンワークに追われ、コア業務に集中できない。</p>
+                </div>
+                <div class="bg-white p-8 rounded-xl shadow-lg transition-transform hover:scale-105 duration-300">
+                    <i class="fas fa-clock text-5xl text-blue-500 mb-4"></i>
+                    <h3 class="text-xl font-bold mb-2">24時間対応の壁</h3>
+                    <p class="text-gray-600">営業時間外の機会損失を防ぎたい。</p>
+                </div>
+                <div class="bg-white p-8 rounded-xl shadow-lg transition-transform hover:scale-105 duration-300">
+                    <i class="fas fa-search text-5xl text-blue-500 mb-4"></i>
+                    <h3 class="text-xl font-bold mb-2">情報へのアクセス性</h3>
+                    <p class="text-gray-600">訪問者が欲しい情報を見つけられない。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 料金プラン -->
+    <section id="plans" class="bg-gray-100 py-16 md:py-24 animate-on-scroll">
+        <div class="container mx-auto px-4 md:px-6">
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-4">
+                最適なプランを、あなたのビジネスに。
+            </h2>
+            <p class="text-lg text-gray-600 text-center mb-12 max-w-3xl mx-auto">
+                LARUbotは、あなたの目的と予算に合わせて3つの料金プランをご用意しました。
+                <br>初期費用はどのプランも一律<span class="font-bold text-red-500">50,000円</span>です。（カスタマイズプランは<span class="font-bold text-red-500">100,000円から</span>）
+            </p>
+
+            <!-- シンプルAIプラン -->
+            <div class="plan-type mb-16">
+                <h3 class="text-2xl md:text-3xl font-bold text-center mb-8">シンプルAIプラン</h3>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- スタートプラン -->
+                    <div class="bg-white p-8 rounded-3xl shadow-xl border-2 border-gray-200 flex flex-col justify-between hover:border-blue-500 transition-colors duration-300">
+                        <div>
+                            <h4 class="text-2xl font-bold mb-2">スタートプラン</h4>
+                            <p class="text-gray-500 mb-6">まずはお試しで導入したい方へ</p>
+                            <p class="text-5xl font-extrabold text-gray-900">
+                                ¥10,000<span class="text-xl font-medium text-gray-500"> / 月</span>
+                            </p>
+                            <ul class="space-y-3 my-8 text-gray-700">
+                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>AIチャットボットの導入</span></li>
+                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>初期ヒアリング・設定サポート</span></li>
+                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>コード不要で簡単設置</span></li>
+                                <li class="flex items-center space-x-2"><i class="fas fa-times text-red-500"></i><span class="text-gray-400 line-through">運用・改善サポート</span></li>
+                            </ul>
+                        </div>
+                        <a href="#contact-form" class="mt-auto block text-center bg-gray-200 text-gray-800 font-bold py-4 px-6 rounded-full hover:bg-gray-300 transition duration-300">
+                            このプランで始める
+                        </a>
+                    </div>
+                    <!-- プレミアムプラン -->
+                    <div class="relative bg-white p-8 rounded-3xl shadow-xl border-2 border-blue-500 flex flex-col justify-between scale-105">
+                        <div class="absolute top-0 right-0 -mt-4 -mr-4 bg-red-500 text-white font-bold text-sm px-6 py-2 rounded-full transform rotate-12 shadow-lg">人気No.1</div>
+                        <div>
+                            <h4 class="text-2xl font-bold mb-2">プレミアムプラン</h4>
+                            <p class="text-gray-500 mb-6">運用・改善までお任せしたい方へ</p>
+                            <p class="text-5xl font-extrabold text-blue-600">
+                                ¥15,000<span class="text-xl font-medium text-gray-500"> / 月</span>
+                            </p>
+                            <ul class="space-y-3 my-8 text-gray-700">
+                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>ベーシックプランの全機能</span></li>
+                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span><span class="font-bold">月2回の修正対応</span></span></li>
+                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>専任チームによる運用サポート</span></li>
+                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>データ分析に基づく会話改善</span></li>
+                            </ul>
+                        </div>
+                        <a href="#contact-form" class="mt-auto block text-center bg-blue-500 text-white font-bold py-4 px-6 rounded-full hover:bg-blue-600 transition duration-300 shadow-md">
+                            このプランで始める
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- アシストAIプラン -->
+            <div class="plan-type mb-16">
+                <h3 class="text-2xl md:text-3xl font-bold text-center mb-8">質問例付きAIプラン</h3>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- スタートプラン -->
+                    <div class="bg-white p-8 rounded-3xl shadow-xl border-2 border-gray-200 flex flex-col justify-between hover:border-blue-500 transition-colors duration-300">
+                        <div>
+                            <h4 class="text-2xl font-bold mb-2">スタートプラン</h4>
+                            <p class="text-gray-500 mb-6">質問例を参考に導入したい方へ</p>
+                            <p class="text-5xl font-extrabold text-gray-900">
+                                ¥15,000<span class="text-xl font-medium text-gray-500"> / 月</span>
+                            </p>
+                            <ul class="space-y-3 my-8 text-gray-700">
+                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>シンプルAIプランと同じサービス内容</span></li>
+                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span><span class="font-bold">質問例を提示する機能</span>が追加</span></li>
+                                <li class="flex items-center space-x-2"><i class="fas fa-times text-red-500"></i><span class="text-gray-400 line-through">運用・改善サポート</span></li>
+                            </ul>
+                        </div>
+                        <a href="#contact-form" class="mt-auto block text-center bg-gray-200 text-gray-800 font-bold py-4 px-6 rounded-full hover:bg-gray-300 transition duration-300">
+                            このプランで始める
+                        </a>
+                    </div>
+                    <!-- プレミアムプラン -->
+                    <div class="relative bg-white p-8 rounded-3xl shadow-xl border-2 border-blue-500 flex flex-col justify-between scale-105">
+                        <div class="absolute top-0 right-0 -mt-4 -mr-4 bg-red-500 text-white font-bold text-sm px-6 py-2 rounded-full transform rotate-12 shadow-lg">人気No.1</div>
+                        <div>
+                            <h4 class="text-2xl font-bold mb-2">プレミアムプラン</h4>
+                            <p class="text-gray-500 mb-6">運用・改善までお任せしたい方へ</p>
+                            <p class="text-5xl font-extrabold text-blue-600">
+                                ¥25,000<span class="text-xl font-medium text-gray-500"> / 月</span>
+                            </p>
+                            <ul class="space-y-3 my-8 text-gray-700">
+                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>シンプルAIプランのスタンダード機能</span></li>
+                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span><span class="font-bold">質問例を提示する機能</span>が追加</span></li>
+                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>専任チームによる運用サポート</span></li>
+                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>データ分析に基づく会話改善</span></li>
+                            </ul>
+                        </div>
+                        <a href="#contact-form" class="mt-auto block text-center bg-blue-500 text-white font-bold py-4 px-6 rounded-full hover:bg-blue-600 transition duration-300 shadow-md">
+                            このプランで始める
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- カスタマイズプラン -->
+            <div class="plan-type">
+                <h3 class="text-2xl md:text-3xl font-bold text-center mb-8">カスタマイズプラン</h3>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- スタートプラン -->
+                    <div class="bg-white p-8 rounded-3xl shadow-xl border-2 border-gray-200 flex flex-col justify-between hover:border-blue-500 transition-colors duration-300">
+                        <div>
+                            <h4 class="text-2xl font-bold mb-2">スタートプラン</h4>
+                            <p class="text-gray-500 mb-6">より高度なカスタマイズに対応したい方へ</p>
+                            <p class="text-5xl font-extrabold text-gray-900">
+                                ¥35,000<span class="text-xl font-medium text-gray-500"> / 月</span>
+                            </p>
+                            <ul class="space-y-3 my-8 text-gray-700">
+                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>高度なカスタマイズに対応</span></li>
+                                <li class="flex items-center space-x-2"><i class="fas fa-times text-red-500"></i><span class="text-gray-400 line-through">高度なサポート</span></li>
+                            </ul>
+                        </div>
+                        <a href="#contact-form" class="mt-auto block text-center bg-gray-200 text-gray-800 font-bold py-4 px-6 rounded-full hover:bg-gray-300 transition duration-300">
+                            このプランで始める
+                        </a>
+                    </div>
+                    <!-- プレミアムプラン -->
+                    <div class="relative bg-white p-8 rounded-3xl shadow-xl border-2 border-blue-500 flex flex-col justify-between scale-105">
+                        <div class="absolute top-0 right-0 -mt-4 -mr-4 bg-red-500 text-white font-bold text-sm px-6 py-2 rounded-full transform rotate-12 shadow-lg">人気No.1</div>
+                        <div>
+                            <h4 class="text-2xl font-bold mb-2">プレミアムプラン</h4>
+                            <p class="text-gray-500 mb-6">高度なサポートを必要とする方向け</p>
+                            <p class="text-5xl font-extrabold text-blue-600">
+                                ¥45,000<span class="text-xl font-medium text-gray-500"> / 月</span>
+                            </p>
+                            <ul class="space-y-3 my-8 text-gray-700">
+                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>カスタマイズプランのベーシック機能</span></li>
+                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>高度なサポートを提供</span></li>
+                            </ul>
+                        </div>
+                        <a href="#contact-form" class="mt-auto block text-center bg-blue-500 text-white font-bold py-4 px-6 rounded-full hover:bg-blue-600 transition duration-300 shadow-md">
+                            このプランで始める
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ご利用の流れ -->
+    <section id="flow" class="py-16 md:py-24 animate-on-scroll">
+        <div class="container mx-auto px-4 md:px-6">
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-12">
+                LARUbot導入までのシンプルな5ステップ
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 text-center">
+                <div class="flex flex-col items-center p-6 bg-white rounded-xl shadow-lg">
+                    <div class="text-4xl font-extrabold text-blue-500 mb-4">1</div>
+                    <h3 class="text-xl font-bold mb-2">お問い合わせ</h3>
+                    <p class="text-gray-600">メールフォームまたはお電話にて承ります。</p>
+                </div>
+                <div class="flex flex-col items-center p-6 bg-white rounded-xl shadow-lg">
+                    <div class="text-4xl font-extrabold text-blue-500 mb-4">2</div>
+                    <h3 class="text-xl font-bold mb-2">ご提案</h3>
+                    <p class="text-gray-600">最適なAIチャットボットをご提案します。</p>
+                </div>
+                <div class="flex flex-col items-center p-6 bg-white rounded-xl shadow-lg">
+                    <div class="text-4xl font-extrabold text-blue-500 mb-4">3</div>
+                    <h3 class="text-xl font-bold mb-2">ヒアリング</h3>
+                    <p class="text-gray-600">目的、予算、期間など詳細なご要望をお伺いします。</p>
+                </div>
+                <div class="flex flex-col items-center p-6 bg-white rounded-xl shadow-lg">
+                    <div class="text-4xl font-extrabold text-blue-500 mb-4">4</div>
+                    <h3 class="text-xl font-bold mb-2">ご契約</h3>
+                    <p class="text-gray-600">ご提案内容にご納得いただけたらご契約となります。</p>
+                </div>
+                <div class="flex flex-col items-center p-6 bg-white rounded-xl shadow-lg">
+                    <div class="text-4xl font-extrabold text-blue-500 mb-4">5</div>
+                    <h3 class="text-xl font-bold mb-2">サービス提供</h3>
+                    <p class="text-gray-600">制作完了後、動作確認を経てご納品します。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- よくある質問セクション -->
+    <section id="faq" class="py-16 md:py-24 bg-gray-100 animate-on-scroll">
+        <div class="container mx-auto px-4 md:px-6">
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-12">
+                よくある質問
+            </h2>
+            <div class="max-w-3xl mx-auto divide-y divide-gray-200">
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>導入までにどのくらいの期間がかかりますか？</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p class="text-gray-600">通常、ご契約からサービス開始まで約2週間〜1ヶ月程度です。カスタマイズの内容によって期間は変動しますので、ヒアリング時にお伝えします。</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>契約期間に縛りはありますか？</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p class="text-gray-600">最低契約期間は6ヶ月からとなります。長期のご利用をご検討の場合は、割引プランもご用意しておりますのでご相談ください。</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>AIの回答精度はどのくらいですか？</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p class="text-gray-600">事前に貴社から提供いただく情報や学習データに基づき、高い精度で回答します。運用開始後も定期的なデータ分析と改善を行い、精度向上に努めます。</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>セキュリティは安全ですか？</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p class="text-gray-600">お客様のデータは厳重に管理し、不正アクセスや情報漏洩を防ぐための強固なセキュリティ対策を講じています。詳細はお問い合わせください。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- お問い合わせフォームセクション -->
+    <section id="contact-form" class="py-16 md:py-24 animate-on-scroll">
+    <div class="container mx-auto px-4 md:px-6">
+        <h2 class="text-3xl md:text-4xl font-bold text-center mb-12">
+            お問い合わせ
+        </h2>
+        <form action="/contact" method="POST" class="max-w-xl mx-auto space-y-6" onsubmit="handleFormSubmit(event)">
+            <div>
+                <label for="name" class="block text-sm font-medium text-gray-700 mb-1">お名前</label>
+                <input type="text" id="name" name="name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors">
+            </div>
+            <div>
+                <label for="email" class="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
+                <input type="email" id="email" name="email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors">
+            </div>
+            <div>
+                <label for="message" class="block text-sm font-medium text-gray-700 mb-1">お問い合わせ内容</label>
+                <textarea id="message" name="message" rows="5" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors"></textarea>
+            </div>
+            <button type="submit" class="w-full bg-blue-500 text-white font-bold py-4 rounded-full hover:bg-blue-600 transition duration-300">
+                送信する
+            </button>
+        </form>
+
+        <div id="success-message" class="hidden mt-6 text-center text-lg font-bold text-green-600">
+            送信が完了しました。
+        </div>
+    </div>
+</section>
+
+    <!-- お問い合わせcta -->
+    <section id="contact" class="bg-blue-600 py-16 md:py-24 text-white text-center">
+        <div class="container mx-auto px-4 md:px-6">
+            <h2 class="text-3xl md:text-4xl font-bold mb-4">
+                AI導入の第一歩を、LARUbotと共に。
+            </h2>
+            <p class="text-lg mb-8 max-w-2xl mx-auto">
+                手頃な価格で高品質なAIチャットボットを導入し、業務の効率化と顧客満足度向上を実現しましょう。
+            </p>
+            <a href="#contact-form" class="inline-block bg-white text-blue-600 hover:bg-gray-200 transition-colors duration-300 font-bold py-4 px-10 rounded-full text-lg shadow-lg">
+                無料相談・お問い合わせはこちら
+            </a>
+        </div>
+    </section>
+
+    <!-- フッター -->
+    <footer class="bg-gray-900 text-gray-400 py-8">
+        <div class="container mx-auto px-4 md:px-6 text-center">
+            <p>&copy; 2025 LARUbot. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <!-- 開閉可能なURL埋め込みチャットボットUI -->
+    <div class="chat-container">
+        <div id="chat-iframe-wrapper" class="chat-iframe-container hidden-transition">
+            <iframe src="https://chatbot-with-example2.onrender.com" class="w-full h-full" style="border:none;"></iframe>
+        </div>
+        <div id="chat-toggle-button" class="chat-button">
+            <!-- ロゴと調和するシンプルなチャットアイコン -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // アニメーションの実装
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('animate-fade-in-up');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            document.querySelectorAll('.animate-on-scroll').forEach(element => {
+                observer.observe(element);
+            });
+
+            // レスポンシブメニューの実装
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+
+            mobileMenu.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', () => {
+                    mobileMenu.classList.add('hidden');
+                });
+            });
+
+            // チャットボットの開閉機能
+            const chatToggleButton = document.getElementById('chat-toggle-button');
+            const chatIframeWrapper = document.getElementById('chat-iframe-container');
+
+            chatToggleButton.addEventListener('click', () => {
+                const isHidden = chatIframeWrapper.classList.contains('hidden-transition');
+                if (isHidden) {
+                    chatIframeWrapper.classList.remove('hidden-transition');
+                    // 閉じるアイコンに変更
+                    chatToggleButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
+                } else {
+                    chatIframeWrapper.classList.add('hidden-transition');
+                    // 開くアイコンに変更
+                    chatToggleButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+                }
+            });
+
+            // FAQアコーディオン機能
+            document.querySelectorAll('.faq-item').forEach(item => {
+                const question = item.querySelector('.faq-question');
+                question.addEventListener('click', () => {
+                    const answer = item.querySelector('.faq-answer');
+                    const icon = item.querySelector('.faq-icon');
+                    
+                    const isOpen = answer.classList.contains('open');
+
+                    // すべてのアコーディオンを閉じる
+                    document.querySelectorAll('.faq-answer').forEach(ans => ans.classList.remove('open'));
+                    document.querySelectorAll('.faq-icon').forEach(ic => ic.classList.remove('rotate'));
+                    
+                    // クリックしたアコーディオンを開く
+                    if (!isOpen) {
+                        answer.classList.add('open');
+                        icon.classList.add('rotate');
+                    }
+                });
+            });
+        });
+        
+        // ★★★ これを追加してください ★★★
+        function handleFormSubmit(event) {
+            // フォームのデフォルト送信をキャンセル
+            event.preventDefault();
+
+            const form = event.target;
+            const formData = new FormData(form);
+
+            // 送信ボタンと入力欄を一時的に無効にする
+            const submitButton = form.querySelector('button[type="submit"]');
+            const inputs = form.querySelectorAll('input, textarea, button');
+            submitButton.textContent = '送信中...';
+            inputs.forEach(input => input.disabled = true);
+
+            fetch('/contact', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                // 送信ボタンを元の状態に戻す
+                submitButton.textContent = '送信する';
+                
+                const successMessage = document.getElementById('success-message');
+                const errorMessage = document.getElementById('error-message');
+
+                if (data.success) {
+                    // 成功メッセージを表示
+                    successMessage.classList.remove('hidden');
+                    form.style.display = 'none';
+                } else {
+                    // 失敗メッセージを表示
+                    if (errorMessage) {
+                        errorMessage.textContent = data.message;
+                        errorMessage.classList.remove('hidden');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                
+                // 送信ボタンを元の状態に戻す
+                submitButton.textContent = '送信する';
+
+                // エラーメッセージを表示
+                const errorMessage = document.getElementById('error-message');
+                if (errorMessage) {
+                    errorMessage.textContent = 'メール送信に失敗しました。時間をおいて再度お試しください。';
+                    errorMessage.classList.remove('hidden');
+                }
+            })
+            .finally(() => {
+                // 入力欄の無効化を解除
+                inputs.forEach(input => input.disabled = false);
+            });
+        }
+    </script>
+</body>
+</html>
+</body>
+</html>
