@@ -49,6 +49,11 @@
             50% { transform: translate(-100px, -100px); }
             100% { transform: translate(0, 0); }
         }
+        .text-gradient {
+            background: linear-gradient(45deg, #3498db, #2ecc71);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
 
         /* アニメーション用スタイル */
         .animate-on-scroll {
@@ -139,8 +144,9 @@
     <!-- ヘッダー -->
     <header class="fixed top-0 left-0 right-0 z-50 bg-white shadow-lg py-4">
         <div class="container mx-auto px-4 md:px-6 flex justify-between items-center">
-            <a href="#" class="flex items-center space-x-3 text-2xl font-bold text-gray-800">
-    <img src="{{ url_for('static', filename='images/larubot_logo_original_transparent.png') }}" alt="LARUbot Logo" class="h-10 md:h-12">
+            <a href="#" class="flex items-center space-x-1 text-2xl font-bold text-gray-800">
+    <img src="{{ url_for('static', filename='images/larubot_logo_original_transparent.png') }}" alt="LARUbot Logo" class="h-18 md:h-20">
+    <span class="ml-2 text-gradient">LARUbot</span>
 </a>
             
             <nav class="hidden md:block">
