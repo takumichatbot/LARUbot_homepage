@@ -611,7 +611,7 @@
                 observer.observe(element);
             });
 
-            // ★★★ モバイルメニューの実装 ★★★
+            // モバイルメニューの実装
             const mobileMenuButton = document.getElementById('mobile-menu-button');
             const mobileMenu = document.getElementById('mobile-menu');
 
@@ -625,9 +625,9 @@
                 });
             });
 
-            // チャットボットの開閉機能
+            // ★★★ チャットボットの開閉機能（修正済み） ★★★
             const chatToggleButton = document.getElementById('chat-toggle-button');
-            const chatIframeWrapper = document.getElementById('chat-iframe-container');
+            const chatIframeWrapper = document.getElementById('chat-iframe-wrapper'); // ここを修正
 
             chatToggleButton.addEventListener('click', () => {
                 const isHidden = chatIframeWrapper.classList.contains('hidden-transition');
