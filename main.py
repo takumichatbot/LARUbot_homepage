@@ -110,4 +110,6 @@ def contact():
 # ★★★ ここまでお問い合わせフォームの送信エンドポイント ★★★
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5004)
+    # デプロイ環境では、OSからポート番号を取得して使うのが一般的です
+    port = int(os.environ.get('PORT', 5004))
+    app.run(host='0.0.0.0', port=port, debug=True)
