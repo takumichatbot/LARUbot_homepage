@@ -144,6 +144,21 @@
     <!-- ヘッダー -->
     <header class="fixed top-0 left-0 right-0 z-50 bg-white shadow-lg py-4">
         <div class="container mx-auto px-4 md:px-6 flex justify-between items-center">
+            <a href="#" class="flex items-center space-x-3 text-2xl font-bold text-gray-800">
+                <img src="{{ url_for('static', filename='images/業務効率化をAIで実現.PNG') }}" alt="LARUbot Logo" class="h-8 md:h-10">
+            </a>
+            
+            <nav class="hidden md:block">
+                <ul class="flex space-x-6">
+                    <li><a href="#about" class="text-gray-600 hover:text-blue-500 transition-colors duration-300 font-medium">サービス概要</a></li>
+                    <li><a href="#ui" class="text-gray-600 hover:text-blue-500 transition-colors duration-300 font-medium">UI対応</a></li>
+                    <li><a href="#plans" class="text-gray-600 hover:text-blue-500 transition-colors duration-300 font-medium">料金プラン</a></li>
+                    <li><a href="#flow" class="text-gray-600 hover:text-blue-500 transition-colors duration-300 font-medium">ご利用の流れ</a></li>
+                    <li><a href="#faq" class="text-gray-600 hover:text-blue-500 transition-colors duration-300 font-medium">よくある質問</a></li>
+                    <li><a href="#contact-form" class="text-white bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-full transition-colors duration-300 font-medium">お問い合わせ</a></li>
+                </ul>
+            </nav>
+            
             <button id="mobile-menu-button" class="md:hidden text-2xl text-gray-600">
                 <i class="fas fa-bars"></i>
             </button>
@@ -159,6 +174,7 @@
             </ul>
         </div>
     </header>
+    
     
 
     <!-- ヒーローセクション -->
