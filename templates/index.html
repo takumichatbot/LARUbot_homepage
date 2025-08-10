@@ -144,38 +144,22 @@
     <!-- ヘッダー -->
     <header class="fixed top-0 left-0 right-0 z-50 bg-white shadow-lg py-4">
         <div class="container mx-auto px-4 md:px-6 flex justify-between items-center">
-            <a href="#" class="flex items-center space-x-3 text-2xl font-bold text-gray-800">
-                <!-- 更新されたロゴ画像 -->
-                <img src="https://placehold.co/150x50/ffffff/000000?text=LARUbot" alt="LARUbot Logo" class="h-8 md:h-10">
-            </a>
-            <nav class="hidden md:block">
-                <ul class="flex space-x-6">
-                    <li><a href="#about" class="text-gray-600 hover:text-blue-500 transition-colors duration-300 font-medium">サービス概要</a></li>
-                    <li><a href="#ui" class="text-gray-600 hover:text-blue-500 transition-colors duration-300 font-medium">UI対応</a></li>
-                    <li><a href="#plans" class="text-gray-600 hover:text-blue-500 transition-colors duration-300 font-medium">料金プラン</a></li>
-                    <li><a href="#flow" class="text-gray-600 hover:text-blue-500 transition-colors duration-300 font-medium">ご利用の流れ</a></li>
-                    <!-- FAQへのリンクを追加 -->
-                    <li><a href="#faq" class="text-gray-600 hover:text-blue-500 transition-colors duration-300 font-medium">よくある質問</a></li>
-                    <li><a href="#contact-form" class="text-white bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-full transition-colors duration-300 font-medium">お問い合わせ</a></li>
-                </ul>
-            </nav>
             <button id="mobile-menu-button" class="md:hidden text-2xl text-gray-600">
                 <i class="fas fa-bars"></i>
             </button>
         </div>
-        <!-- モバイルメニュー -->
         <div id="mobile-menu" class="hidden md:hidden absolute top-full left-0 right-0 bg-white shadow-lg py-4">
             <ul class="flex flex-col space-y-4 px-4">
                 <li><a href="#about" class="text-gray-800 hover:text-blue-500 transition-colors duration-300 font-medium">サービス概要</a></li>
                 <li><a href="#ui" class="text-gray-800 hover:text-blue-500 transition-colors duration-300 font-medium">UI対応</a></li>
                 <li><a href="#plans" class="text-gray-800 hover:text-blue-500 transition-colors duration-300 font-medium">料金プラン</a></li>
                 <li><a href="#flow" class="text-gray-800 hover:text-blue-500 transition-colors duration-300 font-medium">ご利用の流れ</a></li>
-                <!-- FAQへのリンクを追加 -->
                 <li><a href="#faq" class="text-gray-800 hover:text-blue-500 transition-colors duration-300 font-medium">よくある質問</a></li>
                 <li><a href="#contact-form" class="text-white bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-full transition-colors duration-300 font-medium">お問い合わせ</a></li>
             </ul>
         </div>
     </header>
+    
 
     <!-- ヒーローセクション -->
     <section class="hero-bg text-white pt-32 pb-24 md:pt-48 md:pb-32">
@@ -611,7 +595,7 @@
                 observer.observe(element);
             });
 
-            // レスポンシブメニューの実装
+            // ★★★ モバイルメニューの実装 ★★★
             const mobileMenuButton = document.getElementById('mobile-menu-button');
             const mobileMenu = document.getElementById('mobile-menu');
 
@@ -633,11 +617,9 @@
                 const isHidden = chatIframeWrapper.classList.contains('hidden-transition');
                 if (isHidden) {
                     chatIframeWrapper.classList.remove('hidden-transition');
-                    // 閉じるアイコンに変更
                     chatToggleButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
                 } else {
                     chatIframeWrapper.classList.add('hidden-transition');
-                    // 開くアイコンに変更
                     chatToggleButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
                 }
             });
@@ -651,11 +633,9 @@
                     
                     const isOpen = answer.classList.contains('open');
 
-                    // すべてのアコーディオンを閉じる
                     document.querySelectorAll('.faq-answer').forEach(ans => ans.classList.remove('open'));
                     document.querySelectorAll('.faq-icon').forEach(ic => ic.classList.remove('rotate'));
                     
-                    // クリックしたアコーディオンを開く
                     if (!isOpen) {
                         answer.classList.add('open');
                         icon.classList.add('rotate');
@@ -664,15 +644,13 @@
             });
         });
         
-        // ★★★ これを追加してください ★★★
+        // お問い合わせフォーム送信機能
         function handleFormSubmit(event) {
-            // フォームのデフォルト送信をキャンセル
             event.preventDefault();
 
             const form = event.target;
             const formData = new FormData(form);
 
-            // 送信ボタンと入力欄を一時的に無効にする
             const submitButton = form.querySelector('button[type="submit"]');
             const inputs = form.querySelectorAll('input, textarea, button');
             submitButton.textContent = '送信中...';
@@ -684,18 +662,15 @@
             })
             .then(response => response.json())
             .then(data => {
-                // 送信ボタンを元の状態に戻す
                 submitButton.textContent = '送信する';
                 
                 const successMessage = document.getElementById('success-message');
                 const errorMessage = document.getElementById('error-message');
 
                 if (data.success) {
-                    // 成功メッセージを表示
                     successMessage.classList.remove('hidden');
                     form.style.display = 'none';
                 } else {
-                    // 失敗メッセージを表示
                     if (errorMessage) {
                         errorMessage.textContent = data.message;
                         errorMessage.classList.remove('hidden');
@@ -705,10 +680,8 @@
             .catch(error => {
                 console.error('Error:', error);
                 
-                // 送信ボタンを元の状態に戻す
                 submitButton.textContent = '送信する';
 
-                // エラーメッセージを表示
                 const errorMessage = document.getElementById('error-message');
                 if (errorMessage) {
                     errorMessage.textContent = 'メール送信に失敗しました。時間をおいて再度お試しください。';
@@ -716,7 +689,6 @@
                 }
             })
             .finally(() => {
-                // 入力欄の無効化を解除
                 inputs.forEach(input => input.disabled = false);
             });
         }
