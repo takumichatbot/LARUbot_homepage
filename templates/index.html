@@ -356,7 +356,7 @@
 </div>
 
 <div class="plan-type mb-16">
-    <h3 class="text-2xl md:text-3xl font-bold text-center mb-8">質問例付きAIプラン</h3>
+    <h3 class="text-2xl md:text-3xl font-bold text-center mb-8">アシストAIプラン</h3>
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div class="bg-white p-8 rounded-3xl shadow-xl border-2 border-gray-200 flex flex-col justify-between hover:border-blue-500 transition-colors duration-300">
             <div>
@@ -592,19 +592,19 @@
     <!-- JavaScript -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // アニメーションの実装
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('animate-fade-in-up');
-                        observer.unobserve(entry.target);
-                    }
-                });
-            }, { threshold: 0.1 });
+            // アニメーションの実装を一時的に無効化
+            // const observer = new IntersectionObserver((entries) => {
+            //     entries.forEach(entry => {
+            //         if (entry.isIntersecting) {
+            //             entry.target.classList.add('animate-fade-in-up');
+            //             observer.unobserve(entry.target);
+            //         }
+            //     });
+            // }, { threshold: 0.1 });
 
-            document.querySelectorAll('.animate-on-scroll').forEach(element => {
-                observer.observe(element);
-            });
+            // document.querySelectorAll('.animate-on-scroll').forEach(element => {
+            //     observer.observe(element);
+            // });
 
             // モバイルメニューの実装
             const mobileMenuButton = document.getElementById('mobile-menu-button');
@@ -620,9 +620,9 @@
                 });
             });
 
-            // ★★★ チャットボットの開閉機能（修正済み） ★★★
+            // チャットボットの開閉機能
             const chatToggleButton = document.getElementById('chat-toggle-button');
-            const chatIframeWrapper = document.getElementById('chat-iframe-wrapper'); // ここを修正
+            const chatIframeWrapper = document.getElementById('chat-iframe-wrapper');
 
             chatToggleButton.addEventListener('click', () => {
                 const isHidden = chatIframeWrapper.classList.contains('hidden-transition');
@@ -703,21 +703,18 @@
                 inputs.forEach(input => input.disabled = false);
             });
         }
-        // ... (既存のDOMContentLoadedブロック) ...
-
-        // ★★★ この関数を既存のJavaScriptコードに追加 ★★★
+        
+        // プラン選択機能
         function selectPlan(planName) {
             const messageTextarea = document.getElementById('message');
             const hiddenInput = document.getElementById('selected-plan');
 
             if (messageTextarea && hiddenInput) {
-                // 問い合わせ内容にプラン名を追加
                 messageTextarea.value = `${planName}に興味があります。詳細についてお聞かせください。`;
-                // サーバーに送るための隠し入力欄にもプラン名をセット
                 hiddenInput.value = planName;
             }
         }
-    </script>
+</script>
 </body>
 </html>
 </body>
