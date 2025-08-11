@@ -84,21 +84,28 @@ def ask_chatbot():
     bot_answer = get_gemini_answer(user_message)
     return jsonify({'answer': bot_answer})
 
-# ★★★ お問い合わせフォームの送信エンドポイント ★★★
+# ★★★ お問い合わせフォームの送信エンドポイント（修正済み） ★★★
 @app.route('/contact', methods=['POST'])
 def contact():
     name = request.form.get('name')
     email = request.form.get('email')
     message = request.form.get('message')
+    selected_plan = request.form.get('selected-plan')  # ★★★ ここを追加しました ★★★
     
     if not name or not email or not message:
         return jsonify({"success": False, "message": "すべての項目を入力してください。"})
 
     try:
+        # メール本文に選択されたプラン名を追加します
+        body_text = f"お名前: {name}\nメールアドレス: {email}\n\n"
+        if selected_plan:
+            body_text += f"お問い合わせプラン: {selected_plan}\n\n"
+        body_text += f"お問い合わせ内容:\n{message}"
+
         msg = Message(
             subject="【LARUbot_homepage】お問い合わせ",
             recipients=["larubotchatbot@gmail.com"],
-            body=f"お名前: {name}\nメールアドレス: {email}\n\nお問い合わせ内容:\n{message}"
+            body=body_text
         )
         mail.send(msg)
         
