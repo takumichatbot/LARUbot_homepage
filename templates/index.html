@@ -648,9 +648,7 @@
             const form = event.target;
             const formData = new FormData(form);
     
-            <button type="submit" class="w-full bg-blue-500 text-white font-bold py-4 px-6 rounded-full hover:bg-blue-600 transition duration-300">
-    送信する
-</button>
+            const submitButton = form.querySelector('button[type="submit"]');
             const inputs = form.querySelectorAll('input, textarea, button');
             submitButton.textContent = '送信中...';
             inputs.forEach(input => input.disabled = true);
@@ -708,4 +706,277 @@
     </body>
     </html>
 
+    <section id="flow" class="py-16 md:py-24 animate-on-scroll">
+        <div class="container mx-auto px-4 md:px-6">
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-12">
+                LARUbot導入までのシンプルな5ステップ
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 text-center">
+                <div class="flex flex-col items-center p-6 bg-white rounded-xl shadow-lg">
+                    <div class="text-4xl font-extrabold text-blue-500 mb-4">1</div>
+                    <h3 class="text-xl font-bold mb-2">お問い合わせ</h3>
+                    <p class="text-gray-600">メールフォームまたはお電話にて承ります。</p>
+                </div>
+                <div class="flex flex-col items-center p-6 bg-white rounded-xl shadow-lg">
+                    <div class="text-4xl font-extrabold text-blue-500 mb-4">2</div>
+                    <h3 class="text-xl font-bold mb-2">ご提案</h3>
+                    <p class="text-gray-600">最適なAIチャットボットをご提案します。</p>
+                </div>
+                <div class="flex flex-col items-center p-6 bg-white rounded-xl shadow-lg">
+                    <div class="text-4xl font-extrabold text-blue-500 mb-4">3</div>
+                    <h3 class="text-xl font-bold mb-2">ヒアリング</h3>
+                    <p class="text-gray-600">目的、予算、期間など詳細なご要望をお伺いします。</p>
+                </div>
+                <div class="flex flex-col items-center p-6 bg-white rounded-xl shadow-lg">
+                    <div class="text-4xl font-extrabold text-blue-500 mb-4">4</div>
+                    <h3 class="text-xl font-bold mb-2">ご契約</h3>
+                    <p class="text-gray-600">ご提案内容にご納得いただけたらご契約となります。</p>
+                </div>
+                <div class="flex flex-col items-center p-6 bg-white rounded-xl shadow-lg">
+                    <div class="text-4xl font-extrabold text-blue-500 mb-4">5</div>
+                    <h3 class="text-xl font-bold mb-2">サービス提供</h3>
+                    <p class="text-gray-600">制作完了後、動作確認を経てご納品します。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="faq" class="py-16 md:py-24 bg-gray-100 animate-on-scroll">
+        <div class="container mx-auto px-4 md:px-6">
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-12">
+                よくある質問
+            </h2>
+            <div class="max-w-3xl mx-auto divide-y divide-gray-200">
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>導入までにどのくらいの期間がかかりますか？</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p class="text-gray-600">通常、ご契約からサービス開始まで約2週間〜1ヶ月程度です。カスタマイズの内容によって期間は変動しますので、ヒアリング時にお伝えします。</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>契約期間に縛りはありますか？</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p class="text-gray-600">最低契約期間は6ヶ月からとなります。長期のご利用をご検討の場合は、割引プランもご用意しておりますのでご相談ください。</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>AIの回答精度はどのくらいですか？</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p class="text-gray-600">事前に貴社から提供いただく情報や学習データに基づき、高い精度で回答します。運用開始後も定期的なデータ分析と改善を行い、精度向上に努めます。</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>セキュリティは安全ですか？</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p class="text-gray-600">お客様のデータは厳重に管理し、不正アクセスや情報漏洩を防ぐための強固なセキュリティ対策を講じています。詳細はお問い合わせください。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact-form" class="py-16 md:py-24 animate-on-scroll">
+    <div class="container mx-auto px-4 md:px-6">
+        <h2 class="text-3xl md:text-4xl font-bold text-center mb-12">
+            お問い合わせ
+        </h2>
+        <form action="/contact" method="POST" class="max-w-xl mx-auto space-y-6" onsubmit="handleFormSubmit(event)">
+            <div>
+                <label for="name" class="block text-sm font-medium text-gray-700 mb-1">お名前</label>
+                <input type="text" id="name" name="name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors">
+            </div>
+            <div>
+                <label for="email" class="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
+                <input type="email" id="email" name="email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors">
+            </div>
+            <div>
+                <label for="message" class="block text-sm font-medium text-gray-700 mb-1">お問い合わせ内容</label>
+                <textarea id="message" name="message" rows="5" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors"></textarea>
+            </div>
+            <input type="hidden" id="selected-plan" name="selected-plan">
+            <button type="submit" class="w-full bg-blue-500 text-white font-bold py-4 rounded-full hover:bg-blue-600 transition duration-300">
+                送信する
+            </button>
+        </form>
+
+        <div id="success-message" class="hidden mt-6 text-center text-lg font-bold text-green-600">
+            送信が完了しました。
+        </div>
+        <div id="error-message" class="hidden mt-6 text-center text-lg font-bold text-red-600">
+            </div>
+    </div>
+</section>
+
+    <section id="contact" class="bg-blue-600 py-16 md:py-24 text-white text-center">
+        <div class="container mx-auto px-4 md:px-6">
+            <h2 class="text-3xl md:text-4xl font-bold mb-4">
+                AI導入の第一歩を、LARUbotと共に。
+            </h2>
+            <p class="text-lg mb-8 max-w-2xl mx-auto">
+                手頃な価格で高品質なAIチャットボットを導入し、業務の効率化と顧客満足度向上を実現しましょう。
+            </p>
+            <a href="#contact-form" class="inline-block bg-white text-blue-600 hover:bg-gray-200 transition-colors duration-300 font-bold py-4 px-10 rounded-full text-lg shadow-lg">
+                無料相談・お問い合わせはこちら
+            </a>
+        </div>
+    </section>
+
+    <footer class="bg-gray-900 text-gray-400 py-8">
+        <div class="container mx-auto px-4 md:px-6 text-center">
+            <p>&copy; 2025 LARUbot. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <div class="chat-container">
+        <div id="chat-iframe-wrapper" class="chat-iframe-container hidden-transition">
+            <iframe src="https://chatbot-with-example2.onrender.com" class="w-full h-full" style="border:none;"></iframe>
+        </div>
+        <div id="chat-toggle-button" class="chat-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // アニメーションの実装
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('animate-fade-in-up');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1 });
     
+            document.querySelectorAll('.animate-on-scroll').forEach(element => {
+                observer.observe(element);
+            });
+    
+            // モバイルメニューの実装
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+    
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+    
+            mobileMenu.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', () => {
+                    mobileMenu.classList.add('hidden');
+                });
+            });
+    
+            // チャットボットの開閉機能
+            const chatToggleButton = document.getElementById('chat-toggle-button');
+            const chatIframeWrapper = document.getElementById('chat-iframe-wrapper');
+    
+            chatToggleButton.addEventListener('click', () => {
+                const isHidden = chatIframeWrapper.classList.contains('hidden-transition');
+                if (isHidden) {
+                    chatIframeWrapper.classList.remove('hidden-transition');
+                    chatToggleButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
+                } else {
+                    chatIframeWrapper.classList.add('hidden-transition');
+                    chatToggleButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+                }
+            });
+    
+            // FAQアコーディオン機能
+            document.querySelectorAll('.faq-item').forEach(item => {
+                const question = item.querySelector('.faq-question');
+                question.addEventListener('click', () => {
+                    const answer = item.querySelector('.faq-answer');
+                    const icon = item.querySelector('.faq-icon');
+                    
+                    const isOpen = answer.classList.contains('open');
+    
+                    document.querySelectorAll('.faq-answer').forEach(ans => ans.classList.remove('open'));
+                    document.querySelectorAll('.faq-icon').forEach(ic => ic.classList.remove('rotate'));
+                    
+                    if (!isOpen) {
+                        answer.classList.add('open');
+                        icon.classList.add('rotate');
+                    }
+                });
+            });
+        });
+        
+        // お問い合わせフォーム送信機能
+        function handleFormSubmit(event) {
+            event.preventDefault();
+    
+            const form = event.target;
+            const formData = new FormData(form);
+    
+            const submitButton = form.querySelector('button[type="submit"]');
+            const inputs = form.querySelectorAll('input, textarea, button');
+            submitButton.textContent = '送信中...';
+            inputs.forEach(input => input.disabled = true);
+    
+            fetch('/contact', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                submitButton.textContent = '送信する';
+                
+                const successMessage = document.getElementById('success-message');
+                const errorMessage = document.getElementById('error-message');
+    
+                if (data.success) {
+                    successMessage.classList.remove('hidden');
+                    form.style.display = 'none';
+                } else {
+                    if (errorMessage) {
+                        errorMessage.textContent = data.message;
+                        errorMessage.classList.remove('hidden');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                
+                submitButton.textContent = '送信する';
+    
+                const errorMessage = document.getElementById('error-message');
+                if (errorMessage) {
+                    errorMessage.textContent = 'メール送信に失敗しました。時間をおいて再度お試しください。';
+                    errorMessage.classList.remove('hidden');
+                }
+            })
+            .finally(() => {
+                inputs.forEach(input => input.disabled = false);
+            });
+        }
+    
+        function selectPlanAndScroll(planName) {
+            const messageTextarea = document.getElementById('message');
+            const hiddenInput = document.getElementById('selected-plan');
+            const contactFormSection = document.getElementById('contact-form');
+    
+            if (messageTextarea && hiddenInput && contactFormSection) {
+                messageTextarea.value = `${planName}に興味があります。詳細についてお聞かせください。`;
+                hiddenInput.value = planName;
+    
+                contactFormSection.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+    </script>
+
+</body>
+</html>
