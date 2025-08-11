@@ -313,136 +313,128 @@
 
             <!-- シンプルAIプラン -->
             <div class="plan-type mb-16">
-                <h3 class="text-2xl md:text-3xl font-bold text-center mb-8">シンプルAIプラン</h3>
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <!-- スタートプラン -->
-                    <div class="bg-white p-8 rounded-3xl shadow-xl border-2 border-gray-200 flex flex-col justify-between hover:border-blue-500 transition-colors duration-300">
-                        <div>
-                            <h4 class="text-2xl font-bold mb-2">スタートプラン</h4>
-                            <p class="text-gray-500 mb-6">まずはお試しで導入したい方へ</p>
-                            <p class="text-5xl font-extrabold text-gray-900">
-                                ¥10,000<span class="text-xl font-medium text-gray-500"> / 月</span>
-                            </p>
-                            <ul class="space-y-3 my-8 text-gray-700">
-                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>AIチャットボットの導入</span></li>
-                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>初期ヒアリング・設定サポート</span></li>
-                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>コード不要で簡単設置</span></li>
-                                <li class="flex items-center space-x-2"><i class="fas fa-times text-red-500"></i><span class="text-gray-400 line-through">運用・改善サポート</span></li>
-                            </ul>
-                        </div>
-                        <a href="#contact-form" class="mt-auto block text-center bg-gray-200 text-gray-800 font-bold py-4 px-6 rounded-full hover:bg-gray-300 transition duration-300">
-                            このプランで始める
-                        </a>
-                    </div>
-                    <!-- プレミアムプラン -->
-                    <div class="relative bg-white p-8 rounded-3xl shadow-xl border-2 border-blue-500 flex flex-col justify-between scale-105">
-                        <div class="absolute top-0 right-0 -mt-4 -mr-4 bg-red-500 text-white font-bold text-sm px-6 py-2 rounded-full transform rotate-12 shadow-lg">人気No.1</div>
-                        <div>
-                            <h4 class="text-2xl font-bold mb-2">プレミアムプラン</h4>
-                            <p class="text-gray-500 mb-6">運用・改善までお任せしたい方へ</p>
-                            <p class="text-5xl font-extrabold text-blue-600">
-                                ¥15,000<span class="text-xl font-medium text-gray-500"> / 月</span>
-                            </p>
-                            <ul class="space-y-3 my-8 text-gray-700">
-                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>ベーシックプランの全機能</span></li>
-                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span><span class="font-bold">月2回の修正対応</span></span></li>
-                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>専任チームによる運用サポート</span></li>
-                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>データ分析に基づく会話改善</span></li>
-                            </ul>
-                        </div>
-                        <a href="#contact-form" class="mt-auto block text-center bg-blue-500 text-white font-bold py-4 px-6 rounded-full hover:bg-blue-600 transition duration-300 shadow-md">
-                            このプランで始める
-                        </a>
-                    </div>
-                </div>
+    <h3 class="text-2xl md:text-3xl font-bold text-center mb-8">シンプルAIプラン</h3>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="bg-white p-8 rounded-3xl shadow-xl border-2 border-gray-200 flex flex-col justify-between hover:border-blue-500 transition-colors duration-300">
+            <div>
+                <h4 class="text-2xl font-bold mb-2">スタートプラン</h4>
+                <p class="text-gray-500 mb-6">まずはお試しで導入したい方へ</p>
+                <p class="text-5xl font-extrabold text-gray-900">
+                    ¥10,000<span class="text-xl font-medium text-gray-500"> / 月</span>
+                </p>
+                <ul class="space-y-3 my-8 text-gray-700">
+                    <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>AIチャットボットの導入</span></li>
+                    <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>初期ヒアリング・設定サポート</span></li>
+                    <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>コード不要で簡単設置</span></li>
+                    <li class="flex items-center space-x-2"><i class="fas fa-times text-red-500"></i><span class="text-gray-400 line-through">運用・改善サポート</span></li>
+                </ul>
             </div>
+            <a href="#contact-form" class="mt-auto block text-center bg-blue-500 text-white font-bold py-4 px-6 rounded-full hover:bg-blue-600 transition duration-300 shadow-md" onclick="selectPlan('シンプルAIプラン - スタートプラン')">
+                このプランで始める
+            </a>
+        </div>
+        <div class="relative bg-white p-8 rounded-3xl shadow-xl border-2 border-blue-500 flex flex-col justify-between scale-105">
+            <div class="absolute top-0 right-0 -mt-4 -mr-4 bg-red-500 text-white font-bold text-sm px-6 py-2 rounded-full transform rotate-12 shadow-lg">人気No.1</div>
+            <div>
+                <h4 class="text-2xl font-bold mb-2">プレミアムプラン</h4>
+                <p class="text-gray-500 mb-6">運用・改善までお任せしたい方へ</p>
+                <p class="text-5xl font-extrabold text-blue-600">
+                    ¥15,000<span class="text-xl font-medium text-gray-500"> / 月</span>
+                </p>
+                <ul class="space-y-3 my-8 text-gray-700">
+                    <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>ベーシックプランの全機能</span></li>
+                    <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span><span class="font-bold">月2回の修正対応</span></span></li>
+                    <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>専任チームによる運用サポート</span></li>
+                    <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>データ分析に基づく会話改善</span></li>
+                </ul>
+            </div>
+            <a href="#contact-form" class="mt-auto block text-center bg-blue-500 text-white font-bold py-4 px-6 rounded-full hover:bg-blue-600 transition duration-300 shadow-md" onclick="selectPlan('シンプルAIプラン - プレミアムプラン')">
+                このプランで始める
+            </a>
+        </div>
+    </div>
+</div>
 
-            <!-- アシストAIプラン -->
-            <div class="plan-type mb-16">
-                <h3 class="text-2xl md:text-3xl font-bold text-center mb-8">質問例付きAIプラン</h3>
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <!-- スタートプラン -->
-                    <div class="bg-white p-8 rounded-3xl shadow-xl border-2 border-gray-200 flex flex-col justify-between hover:border-blue-500 transition-colors duration-300">
-                        <div>
-                            <h4 class="text-2xl font-bold mb-2">スタートプラン</h4>
-                            <p class="text-gray-500 mb-6">質問例を参考に導入したい方へ</p>
-                            <p class="text-5xl font-extrabold text-gray-900">
-                                ¥15,000<span class="text-xl font-medium text-gray-500"> / 月</span>
-                            </p>
-                            <ul class="space-y-3 my-8 text-gray-700">
-                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>シンプルAIプランと同じサービス内容</span></li>
-                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span><span class="font-bold">質問例を提示する機能</span>が追加</span></li>
-                                <li class="flex items-center space-x-2"><i class="fas fa-times text-red-500"></i><span class="text-gray-400 line-through">運用・改善サポート</span></li>
-                            </ul>
-                        </div>
-                        <a href="#contact-form" class="mt-auto block text-center bg-gray-200 text-gray-800 font-bold py-4 px-6 rounded-full hover:bg-gray-300 transition duration-300">
-                            このプランで始める
-                        </a>
-                    </div>
-                    <!-- プレミアムプラン -->
-                    <div class="relative bg-white p-8 rounded-3xl shadow-xl border-2 border-blue-500 flex flex-col justify-between scale-105">
-                        <div class="absolute top-0 right-0 -mt-4 -mr-4 bg-red-500 text-white font-bold text-sm px-6 py-2 rounded-full transform rotate-12 shadow-lg">人気No.1</div>
-                        <div>
-                            <h4 class="text-2xl font-bold mb-2">プレミアムプラン</h4>
-                            <p class="text-gray-500 mb-6">運用・改善までお任せしたい方へ</p>
-                            <p class="text-5xl font-extrabold text-blue-600">
-                                ¥25,000<span class="text-xl font-medium text-gray-500"> / 月</span>
-                            </p>
-                            <ul class="space-y-3 my-8 text-gray-700">
-                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>シンプルAIプランのスタンダード機能</span></li>
-                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span><span class="font-bold">質問例を提示する機能</span>が追加</span></li>
-                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>専任チームによる運用サポート</span></li>
-                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>データ分析に基づく会話改善</span></li>
-                            </ul>
-                        </div>
-                        <a href="#contact-form" class="mt-auto block text-center bg-blue-500 text-white font-bold py-4 px-6 rounded-full hover:bg-blue-600 transition duration-300 shadow-md">
-                            このプランで始める
-                        </a>
-                    </div>
-                </div>
+<div class="plan-type mb-16">
+    <h3 class="text-2xl md:text-3xl font-bold text-center mb-8">質問例付きAIプラン</h3>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="bg-white p-8 rounded-3xl shadow-xl border-2 border-gray-200 flex flex-col justify-between hover:border-blue-500 transition-colors duration-300">
+            <div>
+                <h4 class="text-2xl font-bold mb-2">スタートプラン</h4>
+                <p class="text-gray-500 mb-6">質問例を参考に導入したい方へ</p>
+                <p class="text-5xl font-extrabold text-gray-900">
+                    ¥15,000<span class="text-xl font-medium text-gray-500"> / 月</span>
+                </p>
+                <ul class="space-y-3 my-8 text-gray-700">
+                    <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>シンプルAIプランと同じサービス内容</span></li>
+                    <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span><span class="font-bold">質問例を提示する機能</span>が追加</span></li>
+                    <li class="flex items-center space-x-2"><i class="fas fa-times text-red-500"></i><span class="text-gray-400 line-through">運用・改善サポート</span></li>
+                </ul>
             </div>
+            <a href="#contact-form" class="mt-auto block text-center bg-blue-500 text-white font-bold py-4 px-6 rounded-full hover:bg-blue-600 transition duration-300 shadow-md" onclick="selectPlan('質問例付きAIプラン - スタートプラン')">
+                このプランで始める
+            </a>
+        </div>
+        <div class="relative bg-white p-8 rounded-3xl shadow-xl border-2 border-blue-500 flex flex-col justify-between scale-105">
+            <div class="absolute top-0 right-0 -mt-4 -mr-4 bg-red-500 text-white font-bold text-sm px-6 py-2 rounded-full transform rotate-12 shadow-lg">人気No.1</div>
+            <div>
+                <h4 class="text-2xl font-bold mb-2">プレミアムプラン</h4>
+                <p class="text-gray-500 mb-6">運用・改善までお任せしたい方へ</p>
+                <p class="text-5xl font-extrabold text-blue-600">
+                    ¥25,000<span class="text-xl font-medium text-gray-500"> / 月</span>
+                </p>
+                <ul class="space-y-3 my-8 text-gray-700">
+                    <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>シンプルAIプランのスタンダード機能</span></li>
+                    <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span><span class="font-bold">質問例を提示する機能</span>が追加</span></li>
+                    <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>専任チームによる運用サポート</span></li>
+                    <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>データ分析に基づく会話改善</span></li>
+                </ul>
+            </div>
+            <a href="#contact-form" class="mt-auto block text-center bg-blue-500 text-white font-bold py-4 px-6 rounded-full hover:bg-blue-600 transition duration-300 shadow-md" onclick="selectPlan('質問例付きAIプラン - プレミアムプラン')">
+                このプランで始める
+            </a>
+        </div>
+    </div>
+</div>
 
-            <!-- カスタマイズプラン -->
-            <div class="plan-type">
-                <h3 class="text-2xl md:text-3xl font-bold text-center mb-8">カスタマイズプラン</h3>
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <!-- スタートプラン -->
-                    <div class="bg-white p-8 rounded-3xl shadow-xl border-2 border-gray-200 flex flex-col justify-between hover:border-blue-500 transition-colors duration-300">
-                        <div>
-                            <h4 class="text-2xl font-bold mb-2">スタートプラン</h4>
-                            <p class="text-gray-500 mb-6">より高度なカスタマイズに対応したい方へ</p>
-                            <p class="text-5xl font-extrabold text-gray-900">
-                                ¥35,000<span class="text-xl font-medium text-gray-500"> / 月</span>
-                            </p>
-                            <ul class="space-y-3 my-8 text-gray-700">
-                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>高度なカスタマイズに対応</span></li>
-                                <li class="flex items-center space-x-2"><i class="fas fa-times text-red-500"></i><span class="text-gray-400 line-through">高度なサポート</span></li>
-                            </ul>
-                        </div>
-                        <a href="#contact-form" class="mt-auto block text-center bg-gray-200 text-gray-800 font-bold py-4 px-6 rounded-full hover:bg-gray-300 transition duration-300">
-                            このプランで始める
-                        </a>
-                    </div>
-                    <!-- プレミアムプラン -->
-                    <div class="relative bg-white p-8 rounded-3xl shadow-xl border-2 border-blue-500 flex flex-col justify-between scale-105">
-                        <div class="absolute top-0 right-0 -mt-4 -mr-4 bg-red-500 text-white font-bold text-sm px-6 py-2 rounded-full transform rotate-12 shadow-lg">人気No.1</div>
-                        <div>
-                            <h4 class="text-2xl font-bold mb-2">プレミアムプラン</h4>
-                            <p class="text-gray-500 mb-6">高度なサポートを必要とする方向け</p>
-                            <p class="text-5xl font-extrabold text-blue-600">
-                                ¥45,000<span class="text-xl font-medium text-gray-500"> / 月</span>
-                            </p>
-                            <ul class="space-y-3 my-8 text-gray-700">
-                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>カスタマイズプランのベーシック機能</span></li>
-                                <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>高度なサポートを提供</span></li>
-                            </ul>
-                        </div>
-                        <a href="#contact-form" class="mt-auto block text-center bg-blue-500 text-white font-bold py-4 px-6 rounded-full hover:bg-blue-600 transition duration-300 shadow-md">
-                            このプランで始める
-                        </a>
-                    </div>
-                </div>
+<div class="plan-type">
+    <h3 class="text-2xl md:text-3xl font-bold text-center mb-8">カスタマイズプラン</h3>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="bg-white p-8 rounded-3xl shadow-xl border-2 border-gray-200 flex flex-col justify-between hover:border-blue-500 transition-colors duration-300">
+            <div>
+                <h4 class="text-2xl font-bold mb-2">スタートプラン</h4>
+                <p class="text-gray-500 mb-6">より高度なカスタマイズに対応したい方へ</p>
+                <p class="text-5xl font-extrabold text-gray-900">
+                    ¥35,000<span class="text-xl font-medium text-gray-500"> / 月</span>
+                </p>
+                <ul class="space-y-3 my-8 text-gray-700">
+                    <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>高度なカスタマイズに対応</span></li>
+                    <li class="flex items-center space-x-2"><i class="fas fa-times text-red-500"></i><span class="text-gray-400 line-through">高度なサポート</span></li>
+                </ul>
             </div>
+            <a href="#contact-form" class="mt-auto block text-center bg-blue-500 text-white font-bold py-4 px-6 rounded-full hover:bg-blue-600 transition duration-300 shadow-md" onclick="selectPlan('カスタマイズプラン - スタートプラン')">
+                このプランで始める
+            </a>
+        </div>
+        <div class="relative bg-white p-8 rounded-3xl shadow-xl border-2 border-blue-500 flex flex-col justify-between scale-105">
+            <div class="absolute top-0 right-0 -mt-4 -mr-4 bg-red-500 text-white font-bold text-sm px-6 py-2 rounded-full transform rotate-12 shadow-lg">人気No.1</div>
+            <div>
+                <h4 class="text-2xl font-bold mb-2">プレミアムプラン</h4>
+                <p class="text-gray-500 mb-6">高度なサポートを必要とする方向け</p>
+                <p class="text-5xl font-extrabold text-blue-600">
+                    ¥45,000<span class="text-xl font-medium text-gray-500"> / 月</span>
+                </p>
+                <ul class="space-y-3 my-8 text-gray-700">
+                    <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>カスタマイズプランのベーシック機能</span></li>
+                    <li class="flex items-center space-x-2"><i class="fas fa-check text-blue-500"></i><span>高度なサポートを提供</span></li>
+                </ul>
+            </div>
+            <a href="#contact-form" class="mt-auto block text-center bg-blue-500 text-white font-bold py-4 px-6 rounded-full hover:bg-blue-600 transition duration-300 shadow-md" onclick="selectPlan('カスタマイズプラン - プレミアムプラン')">
+                このプランで始める
+            </a>
+        </div>
+    </div>
+</div>
         </div>
     </section>
 
@@ -548,6 +540,7 @@
                 <label for="message" class="block text-sm font-medium text-gray-700 mb-1">お問い合わせ内容</label>
                 <textarea id="message" name="message" rows="5" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors"></textarea>
             </div>
+            <input type="hidden" id="selected-plan" name="selected-plan">
             <button type="submit" class="w-full bg-blue-500 text-white font-bold py-4 rounded-full hover:bg-blue-600 transition duration-300">
                 送信する
             </button>
@@ -556,6 +549,8 @@
         <div id="success-message" class="hidden mt-6 text-center text-lg font-bold text-green-600">
             送信が完了しました。
         </div>
+        <div id="error-message" class="hidden mt-6 text-center text-lg font-bold text-red-600">
+            </div>
     </div>
 </section>
 
@@ -707,6 +702,20 @@
             .finally(() => {
                 inputs.forEach(input => input.disabled = false);
             });
+        }
+        // ... (既存のDOMContentLoadedブロック) ...
+
+        // ★★★ この関数を既存のJavaScriptコードに追加 ★★★
+        function selectPlan(planName) {
+            const messageTextarea = document.getElementById('message');
+            const hiddenInput = document.getElementById('selected-plan');
+
+            if (messageTextarea && hiddenInput) {
+                // 問い合わせ内容にプラン名を追加
+                messageTextarea.value = `${planName}に興味があります。詳細についてお聞かせください。`;
+                // サーバーに送るための隠し入力欄にもプラン名をセット
+                hiddenInput.value = planName;
+            }
         }
     </script>
 </body>
