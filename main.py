@@ -34,6 +34,13 @@ mail = Mail(app)
 # QAデータをプロンプトに組み込むためのテキストを作成
 qa_prompt_text = "\n\n".join([f"### {key}\n{value}" for key, value in QA_DATA['data'].items()])
 
+# sitemap.xmlを配信するためのルーティングを追加
+@app.route('/sitemap.xml')
+def serve_sitemap():
+    # 'sitemap.xml'ファイルが static フォルダ内にあることを前提とします
+    return app.send_static_file('sitemap.xml')
+
+
 def get_gemini_answer(question):
     print(f"質問: {question}")
     try:
@@ -90,13 +97,12 @@ def contact():
     name = request.form.get('name')
     email = request.form.get('email')
     message = request.form.get('message')
-    selected_plan = request.form.get('selected-plan')  # ★★★ ここを追加しました ★★★
+    selected_plan = request.form.get('selected-plan')
     
     if not name or not email or not message:
         return jsonify({"success": False, "message": "すべての項目を入力してください。"})
 
     try:
-        # メール本文に選択されたプラン名を追加します
         body_text = f"お名前: {name}\nメールアドレス: {email}\n\n"
         if selected_plan:
             body_text += f"お問い合わせプラン: {selected_plan}\n\n"
@@ -117,19 +123,5 @@ def contact():
 # ★★★ ここまでお問い合わせフォームの送信エンドポイント ★★★
 
 if __name__ == '__main__':
-    # デプロイ環境では、環境変数からポート番号を取得して使うのが一般的です。
-    # 取得できない場合はデフォルトで5004番ポートを使用します。
     port = int(os.environ.get('PORT', 5004))
     app.run(host='0.0.0.0', port=port, debug=False)
-    # main.py
-# ... (既存のコード) ...
-import os # osモジュールを追加
-
-# ... (既存のコード) ...
-
-# sitemap.xmlを配信するためのルーティングを追加
-@app.route('/sitemap.xml')
-def serve_sitemap():
-    return app.send_static_file('sitemap.xml')
-
-# ... (既存のコード) ...
