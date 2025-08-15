@@ -19,7 +19,6 @@ genai.configure(api_key=GOOGLE_API_KEY)
 app = Flask(__name__)
 
 # ★★★ メール送信のための設定 ★★★
-# Flask-Mailを使ってメールを送信するための設定をします
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
@@ -34,10 +33,9 @@ mail = Mail(app)
 # QAデータをプロンプトに組み込むためのテキストを作成
 qa_prompt_text = "\n\n".join([f"### {key}\n{value}" for key, value in QA_DATA['data'].items()])
 
-# ★★★ サイトマップのルーティングをここに移動 ★★★
+# ★★★ サイトマップのルーティングをここに配置 ★★★
 @app.route('/sitemap.xml')
 def serve_sitemap():
-    # 'sitemap.xml'ファイルが static フォルダ内にあることを前提とします
     return app.send_static_file('sitemap.xml')
 
 def get_gemini_answer(question):
@@ -46,7 +44,6 @@ def get_gemini_answer(question):
         model = genai.GenerativeModel('models/gemini-1.5-flash')
         print("Geminiモデルを初期化しました")
 
-        # QA_DATAをプロンプトに組み込む
         full_question = f"""
         あなたはLARUbotのカスタマーサポートAIです。
         以下の「ルール・規則」セクションに記載されている情報のみに基づいて、お客様からの質問に絵文字を使わずに丁寧に回答してください。
@@ -90,7 +87,6 @@ def ask_chatbot():
     bot_answer = get_gemini_answer(user_message)
     return jsonify({'answer': bot_answer})
 
-# ★★★ お問い合わせフォームの送信エンドポイント（修正済み） ★★★
 @app.route('/contact', methods=['POST'])
 def contact():
     name = request.form.get('name')
@@ -119,7 +115,6 @@ def contact():
     except Exception as e:
         print(f"メール送信エラー: {e}")
         return jsonify({"success": False, "message": "メール送信に失敗しました。時間をおいて再度お試しください。"})
-# ★★★ ここまでお問い合わせフォームの送信エンドポイント ★★★
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5004))
