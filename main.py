@@ -34,7 +34,7 @@ mail = Mail(app)
 # QAデータをプロンプトに組み込むためのテキストを作成
 qa_prompt_text = "\n\n".join([f"### {key}\n{value}" for key, value in QA_DATA['data'].items()])
 
-# sitemap.xmlを配信するためのルーティングを追加
+# sitemap.xmlを配信するためのルーティングを、他のルーティングと同じ場所に移動
 @app.route('/sitemap.xml')
 def serve_sitemap():
     # 'sitemap.xml'ファイルが static フォルダ内にあることを前提とします
