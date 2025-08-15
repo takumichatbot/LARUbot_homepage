@@ -121,3 +121,15 @@ if __name__ == '__main__':
     # 取得できない場合はデフォルトで5004番ポートを使用します。
     port = int(os.environ.get('PORT', 5004))
     app.run(host='0.0.0.0', port=port, debug=False)
+    # main.py
+# ... (既存のコード) ...
+import os # osモジュールを追加
+
+# ... (既存のコード) ...
+
+# sitemap.xmlを配信するためのルーティングを追加
+@app.route('/sitemap.xml')
+def serve_sitemap():
+    return app.send_static_file('sitemap.xml')
+
+# ... (既存のコード) ...
