@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ data.bot_name }}</title>
+    <!-- 外部CSSファイルを読み込みます -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="chatbot-container">
+        <!-- ▼▼▼ style属性を追加して、DBから取得した色を適用 ▼▼▼ -->
+        <div class="chatbot-header" style="background-color: {{ data.header_color }};">
+            {{ data.bot_name }}
+        </div>
+        <div class="chatbot-messages" id="chatbot-messages">
+            <div class="message bot-message">{{ data.welcome_message }}</div>
+            <div class="example-questions-container" id="initial-example-questions">
+                {% for question in example_questions %}
+                <button class="example-btn">{{ question }}</button>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="chatbot-input">
+            <input type="text" id="user-input" placeholder="メッセージを入力..." onkeypress="handleKeyPress(event)">
+            <button id="send-button">送信</button>
+        </div>
+    </div>
+   <script>
+       // ▼▼▼ JavaScriptの構文エラーを修正（URLを引用符で囲む） ▼▼▼
+       const API_ENDPOINT = '/ask/{{ data.user_id }}';
+   </script>
+   <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

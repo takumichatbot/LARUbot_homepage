@@ -1,0 +1,95 @@
+{% extends "layout.html" %}
+
+{% block title %}カスタマイズ - {{ super() }}{% endblock %}
+
+{% block page_header %}
+    <a href="{{ url_for('dashboard') }}" class="text-slate-500 hover:text-sky-600 mr-4" title="ダッシュボードに戻る">
+        <i class="fas fa-arrow-left"></i>
+    </a>
+    <h1 class="text-xl font-semibold text-slate-800">チャットボット設定</h1>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    
+    <div class="lg:col-span-2 bg-white p-8 rounded-xl shadow-md">
+        <form method="POST">
+            <div class="mb-8">
+                <h3 class="text-xl font-bold mb-4 text-slate-800 border-b pb-2">基本設定</h3>
+                <div class="mb-6">
+                    <label for="bot_name" class="block text-slate-700 text-sm font-bold mb-2">ボットの名前:</label>
+                    <input type="text" id="bot_name" name="bot_name" value="{{ data.bot_name }}" class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    <p class="text-slate-500 text-xs mt-1">チャットウィンドウのヘッダーに表示されます。</p>
+                </div>
+                <div>
+                    <label for="welcome_message" class="block text-slate-700 text-sm font-bold mb-2">歓迎メッセージ:</label>
+                    <textarea id="welcome_message" name="welcome_message" rows="4" class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-sky-500">{{ data.welcome_message }}</textarea>
+                    <p class="text-slate-500 text-xs mt-1">チャットを開いたときに最初に表示されるメッセージです。</p>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-xl font-bold mb-4 text-slate-800 border-b pb-2">デザイン設定</h3>
+                <div class="mb-6">
+                    <label for="header_color" class="block text-slate-700 text-sm font-bold mb-2">ヘッダーの色:</label>
+                    <div class="flex items-center">
+                        <input type="color" id="header_color" name="header_color" value="{{ data.header_color }}" class="h-10 w-10 p-1 border rounded-lg cursor-pointer">
+                        <input type="text" id="color-code-text" value="{{ data.header_color }}" class="ml-3 font-mono text-slate-700 w-24 border-b">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-8 text-right">
+                <button type="submit" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-lg focus:outline-none focus:shadow-outline transition-colors shadow-lg hover:shadow-xl">
+                    <i class="fas fa-save mr-2"></i> 保存する
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="lg:col-span-1">
+        <div class="sticky top-8">
+            <h3 class="text-lg font-bold mb-2 text-slate-700">ライブプレビュー</h3>
+            <div class="w-full max-w-sm mx-auto bg-white rounded-xl shadow-2xl overflow-hidden">
+                <div id="preview-header" class="p-3 text-white font-bold text-center transition-colors" style="background-color: {{ data.header_color }};">
+                    <span id="preview-bot-name">{{ data.bot_name }}</span>
+                </div>
+                <div class="p-4 bg-slate-50 h-64 flex flex-col">
+                    <div id="preview-welcome-message" class="bg-slate-200 text-slate-800 text-sm p-2 rounded-lg self-start max-w-xs break-words">
+                        {{ data.welcome_message }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const botNameInput = document.getElementById('bot_name');
+    const welcomeMessageInput = document.getElementById('welcome_message');
+    const colorPicker = document.getElementById('header_color');
+    const colorCodeText = document.getElementById('color-code-text');
+    
+    const previewBotName = document.getElementById('preview-bot-name');
+    const previewWelcomeMessage = document.getElementById('preview-welcome-message');
+    const previewHeader = document.getElementById('preview-header');
+
+    botNameInput.addEventListener('input', (e) => {
+        previewBotName.textContent = e.target.value;
+    });
+
+    welcomeMessageInput.addEventListener('input', (e) => {
+        previewWelcomeMessage.textContent = e.target.value;
+    });
+    
+    colorPicker.addEventListener('input', (e) => {
+        previewHeader.style.backgroundColor = e.target.value;
+        colorCodeText.value = e.target.value;
+    });
+
+    colorCodeText.addEventListener('input', (e) => {
+        previewHeader.style.backgroundColor = e.target.value;
+        colorPicker.value = e.target.value;
+    });
+</script>
+{% endblock %}

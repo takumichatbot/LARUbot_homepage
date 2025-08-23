@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+
+{% block title %}会話ログ - {{ super() }}{% endblock %}
+
+{% block page_header %}
+    <a href="{{ url_for('dashboard') }}" class="text-slate-500 hover:text-sky-600 mr-4" title="ダッシュボードに戻る">
+        <i class="fas fa-arrow-left"></i>
+    </a>
+    <h1 class="text-xl font-semibold text-slate-800">会話ログ</h1>
+{% endblock %}
+
+{% block content %}
+<div class="bg-white p-8 rounded-xl shadow-md">
+    <h2 class="text-2xl font-bold mb-6 text-slate-800">ユーザーとの会話履歴</h2>
+    
+    <div class="space-y-8">
+        {% if logs %}
+            {% for log in logs %}
+            <div class="border-t pt-6">
+                <p class="text-sm text-center text-slate-400 mb-4">{{ log.timestamp.strftime('%Y年%m月%d日 %H:%M') }}</p>
+                <div class="space-y-4">
+                    <div class="flex justify-end">
+                        <div class="bg-sky-500 text-white p-3 rounded-lg rounded-br-none max-w-lg shadow">
+                            <p>{{ log.user_question }}</p>
+                        </div>
+                    </div>
+                    <div class="flex justify-start">
+                        <div class="bg-slate-200 text-slate-800 p-3 rounded-lg rounded-bl-none max-w-lg shadow-sm">
+                            <p>{{ log.bot_answer }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-12">
+                <i class="fas fa-comments text-4xl text-slate-300 mb-4"></i>
+                <p class="text-slate-500">まだ会話ログはありません。</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "layout.html" %}
+
+{% block title %}ダッシュボード - {{ super() }}{% endblock %}
+{% block header_title %}ダッシュボード{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <div class="bg-gradient-to-r from-sky-500 to-indigo-500 text-white p-8 rounded-xl shadow-lg">
+        <h2 class="text-3xl font-bold mb-2">ようこそ、LARUbotへ！</h2>
+        <p class="mb-6">チャットボットを完成させるための、最初のステップをご紹介します。</p>
+        <div class="flex space-x-4">
+            <a href="{{ url_for('settings') }}" class="bg-white/30 hover:bg-white/40 text-white font-bold py-2 px-4 rounded-lg transition">1. 見た目をカスタマイズ</a>
+            <a href="{{ url_for('qa_management') }}" class="bg-white/30 hover:bg-white/40 text-white font-bold py-2 px-4 rounded-lg transition">2. 知識をチューニング</a>
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow-md">
+        <h3 class="font-bold text-lg mb-4">あなたのチャットボット</h3>
+        <p class="mb-2 text-slate-600">以下のURLをサイトに埋め込むか、直接アクセスしてチャットボットをテストできます。</p>
+        <div class="flex items-center space-x-2 bg-slate-100 p-3 rounded-lg">
+            <i class="fas fa-link text-slate-500"></i>
+            <input id="chatbot-url" type="text" value="{{ request.host_url }}chatbot/{{ user.id }}" readonly class="flex-grow bg-transparent outline-none text-sky-700">
+            <button onclick="copyUrl()" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-1 px-3 text-sm rounded-md transition">コピー</button>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <a href="{{ url_for('settings') }}" class="block p-6 bg-white rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all">
+            <i class="fas fa-palette text-2xl text-green-500 mb-3"></i>
+            <h3 class="font-bold text-lg text-slate-800">カスタマイズ</h3>
+            <p class="text-slate-600">ボットの名前、色、挨拶メッセージを変更します。</p>
+        </a>
+        <a href="{{ url_for('qa_management') }}" class="block p-6 bg-white rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all">
+            <i class="fas fa-brain text-2xl text-indigo-500 mb-3"></i>
+            <h3 class="font-bold text-lg text-slate-800">チューニング</h3>
+            <p class="text-slate-600">Q&Aを編集してボットを賢く育てます。</p>
+        </a>
+        <a href="{{ url_for('conversation_logs') }}" class="block p-6 bg-white rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all">
+            <i class="fas fa-history text-2xl text-purple-500 mb-3"></i>
+            <h3 class="font-bold text-lg text-slate-800">会話ログ</h3>
+            <p class="text-slate-600">ユーザーとの会話履歴を確認・分析します。</p>
+        </a>
+    </div>
+</div>
+
+<script>
+    function copyUrl() {
+        const urlInput = document.getElementById('chatbot-url');
+        urlInput.select();
+        document.execCommand('copy');
+        alert('URLをコピーしました！');
+    }
+</script>
+{% endblock %}
+
