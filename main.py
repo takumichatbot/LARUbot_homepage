@@ -1,12 +1,14 @@
 import os
 import json
 import re
-import stripe # Stripeライブラリをインポート
+import stripe
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from email_validator import validate_email, EmailNotValidError
 import google.generativeai as genai
 from flask_mail import Mail, Message
+from datetime import datetime, timedelta
+from functools import wraps
 
 from models import db, User, CustomerData, QA, ConversationLog
 from config import DevelopmentConfig
@@ -23,7 +25,6 @@ def create_app(config_class=DevelopmentConfig):
     login_manager.login_message = 'このページにアクセスするにはログインが必要です。'
     login_manager.login_message_category = 'info'
 
-    # ▼▼▼ Stripe APIキーを設定 ▼▼▼
     stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 
     app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -60,6 +61,15 @@ def create_app(config_class=DevelopmentConfig):
             print(f"ナレッジファイルを更新しました: {filepath}")
         except IOError as e:
             print(f"ナレッジファイルの書き込みエラー: {e}")
+
+    def admin_required(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated or not current_user.is_admin:
+                flash('このページにアクセスする権限がありません。', 'danger')
+                return redirect(url_for('dashboard'))
+            return f(*args, **kwargs)
+        return decorated_function
 
     # --- 認証ルート ---
     @app.route('/login', methods=['GET', 'POST'])
@@ -146,6 +156,10 @@ def create_app(config_class=DevelopmentConfig):
     @app.route('/qa/add', methods=['POST'])
     @login_required
     def add_qa():
+        customer_plan = current_user.customer_data.plan
+        if customer_plan == 'starter' and current_user.customer_data.qas.count() >= 100:
+            flash('Q&Aの登録上限数（100件）に達しました。無制限に登録するには、プロフェッショナルプランへのアップグレードをご検討ください。', 'warning')
+            return redirect(url_for('qa_management'))
         question = request.form.get('question', '').strip()
         answer = request.form.get('answer', '').strip()
         if question and answer:
@@ -174,7 +188,12 @@ def create_app(config_class=DevelopmentConfig):
     @app.route('/logs')
     @login_required
     def conversation_logs():
-        logs = current_user.customer_data.logs.order_by(ConversationLog.timestamp.desc()).all()
+        customer_plan = current_user.customer_data.plan
+        if customer_plan == 'starter':
+            seven_days_ago = datetime.utcnow() - timedelta(days=7)
+            logs = current_user.customer_data.logs.filter(ConversationLog.timestamp >= seven_days_ago).order_by(ConversationLog.timestamp.desc()).all()
+        else:
+            logs = current_user.customer_data.logs.order_by(ConversationLog.timestamp.desc()).all()
         return render_template('conversation_logs.html', logs=logs, user=current_user)
 
     # --- 公開ページとAPIのルート ---
@@ -230,7 +249,7 @@ def create_app(config_class=DevelopmentConfig):
     # --- Stripe Webhook用のルート ---
     @app.route('/stripe-webhook', methods=['POST'])
     def stripe_webhook():
-        payload = request.get_data(as_text=True)
+        payload = request.data
         sig_header = request.headers.get('Stripe-Signature')
         webhook_secret = os.getenv('STRIPE_WEBHOOK_SECRET')
         if not webhook_secret:
@@ -241,25 +260,29 @@ def create_app(config_class=DevelopmentConfig):
                 payload, sig_header, webhook_secret
             )
         except ValueError as e:
+            print(f"Webhook ValueError: {e}")
             return 'Invalid payload', 400
         except stripe.error.SignatureVerificationError as e:
+            print(f"Webhook SignatureVerificationError: {e}")
             return 'Invalid signature', 400
-
         if event['type'] == 'checkout.session.completed':
             session = event['data']['object']
             customer_email = session.get('customer_email')
             stripe_customer_id = session.get('customer')
             user = User.query.filter_by(email=customer_email).first()
             if user:
-                line_items = stripe.checkout.Session.list_line_items(session.id, limit=1)
-                price_id = line_items.data[0].price.id
-                if price_id == os.getenv('STRIPE_STARTER_PRICE_ID'):
-                    user.customer_data.plan = 'starter'
-                elif price_id == os.getenv('STRIPE_PRO_PRICE_ID'):
-                    user.customer_data.plan = 'professional'
-                user.customer_data.stripe_customer_id = stripe_customer_id
-                db.session.commit()
-                print(f"ユーザー {customer_email} のプランを {user.customer_data.plan} に更新しました。")
+                try:
+                    line_items = stripe.checkout.Session.list_line_items(session.id, limit=1)
+                    price_id = line_items.data[0].price.id
+                    if price_id == os.getenv('STRIPE_STARTER_PRICE_ID'):
+                        user.customer_data.plan = 'starter'
+                    elif price_id == os.getenv('STRIPE_PRO_PRICE_ID'):
+                        user.customer_data.plan = 'professional'
+                    user.customer_data.stripe_customer_id = stripe_customer_id
+                    db.session.commit()
+                    print(f"成功: ユーザー {customer_email} のプランを {user.customer_data.plan} に更新しました。")
+                except Exception as e:
+                    print(f"データベース更新中にエラーが発生しました: {e}")
         return 'Success', 200
 
     # --- チャットボットAPIと公開ページ ---
@@ -267,9 +290,8 @@ def create_app(config_class=DevelopmentConfig):
     def chatbot_page(user_id):
         customer_data = CustomerData.query.filter_by(user_id=user_id).first_or_404()
         example_questions = []
-        # プロフェッショナルプランの場合のみ質問例を表示するロジック
         if customer_data.plan == 'professional':
-            knowledge_file = os.path.join('static/knowledge', f"knowledge_{user_id}.json")
+            knowledge_file = os.path.join('static/knowledge', f"knowledge_{customer_data.user_id}.json")
             if os.path.exists(knowledge_file):
                 try:
                     with open(knowledge_file, 'r', encoding='utf-8') as f:
@@ -328,12 +350,35 @@ def create_app(config_class=DevelopmentConfig):
             db.session.rollback()
         return jsonify({"answer": answer, "follow_up_questions": follow_up_questions})
 
+    # --- 管理者用ダッシュボードのルート ---
+    @app.route('/admin')
+    @login_required
+    @admin_required
+    def admin_dashboard():
+        all_users = User.query.order_by(User.id.desc()).all()
+        return render_template('admin_dashboard.html', user=current_user, all_users=all_users)
+
     return app
 
 # --- アプリケーションの実行 ---
-if __name__ == '__main__':
-    app = create_app()
+# ▼▼▼【修正点】コマンド登録をifブロックの外に移動 ▼▼▼
+app = create_app()
+
+@app.cli.command("reset-db")
+def reset_db_command():
+    """データベースをリセット（全テーブルを削除して再作成）する"""
+    with app.app_context():
+        db.drop_all()
+        db.create_all()
+        print("データベースを正常にリセットしました。")
+
+@app.cli.command("init-db")
+def init_db_command():
+    """データベースを初期化（テーブルを作成）する"""
     with app.app_context():
         db.create_all()
+    print("データベースを初期化しました。")
+
+if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=True)

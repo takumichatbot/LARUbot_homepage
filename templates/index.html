@@ -2,9 +2,20 @@
 <html lang="ja" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
+    <!-- ▼▼▼ Google Analyticsのコードをここに設定 ▼▼▼ -->
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-6BF1QV6ZF7"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-6BF1QV6ZF7');
+    </script>
+    <!-- ▲▲▲ ここまで ▲▲▲ -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LARUbot | Gemini AI連携で業務を革新するAIチャットボット</title>
-    <meta name="description" content="LARUbotは、最先端のGemini AIを搭載した次世代のAIチャットボットです。貴社のデータを学習し、問い合わせ対応の自動化や業務効率化を実現します。10日間の無料トライアルで、その実力をお確かめください。">
+    <title>LARUbot | 会話を、価値に変えるAI。</title>
+    <meta name="description" content="LARUbotは、顧客との対話からビジネスの価値を創造するAIチャットボットです。問い合わせ対応を自動化し、業務効率化と顧客満足度向上を実現します。">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -19,6 +30,7 @@
 </head>
 <body class="bg-slate-50 text-slate-800">
 
+<!-- Header -->
 <header class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md shadow-sm">
     <div class="container mx-auto px-6 py-3 flex justify-between items-center">
         <a href="{{ url_for('index') }}" class="text-3xl font-bold text-gradient">LARUbot</a>
@@ -47,13 +59,14 @@
 </header>
 
 <main>
+    <!-- Hero Section -->
     <section class="hero-bg text-white pt-40 pb-24">
         <div class="container mx-auto px-6 text-center">
             <h1 class="text-4xl md:text-6xl font-extrabold leading-tight tracking-tight mb-6">
-                最先端の<span class="text-gradient">Gemini AI</span>を搭載した<br>AIチャットボット
+                <span class="text-gradient">会話を、価値に変えるAI。</span>
             </h1>
             <p class="text-lg md:text-xl font-light text-slate-300 mb-10 max-w-3xl mx-auto">
-                貴社の独自データを学習し、人間のように自然な対話で顧客の疑問を解決。<br>問い合わせ対応を自動化し、ビジネスの成長を加速させます。
+                LARUbotは、顧客との対話からビジネスの価値を創造するAIチャットボットです。<br>問い合わせ対応を自動化し、業務効率化と顧客満足度向上を同時に実現します。
             </p>
             <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
                 <a href="{{ url_for('register') }}" class="w-full sm:w-auto bg-sky-500 hover:bg-sky-600 text-white font-bold py-4 px-8 rounded-full shadow-lg hover:shadow-xl transition-all text-lg">
@@ -66,6 +79,7 @@
         </div>
     </section>
 
+    <!-- Reasons to Choose LARUbot -->
     <section id="reasons" class="py-24">
         <div class="container mx-auto px-6">
             <div class="text-center mb-16">
@@ -92,6 +106,7 @@
         </div>
     </section>
 
+    <!-- Pricing Section -->
     <section id="plans" class="bg-slate-100 py-24">
         <div class="container mx-auto px-6">
             <div class="text-center mb-16">
@@ -99,7 +114,6 @@
                 <p class="text-slate-600 text-lg">全プラン初期費用は無料。事業の成長に合わせて柔軟に選べるプランをご用意しております。</p>
             </div>
             <div class="grid lg:grid-cols-3 gap-8 items-stretch">
-                
                 <div class="bg-white p-8 rounded-2xl shadow-lg flex flex-col">
                     <h3 class="text-2xl font-bold">スタータープラン</h3>
                     <p class="text-slate-500 mt-2 flex-grow">AI導入をスタートするための本格的な基本プラン</p>
@@ -110,14 +124,13 @@
                         <li class="flex items-start"><i class="fas fa-check-circle text-emerald-500 mr-3 mt-1"></i><span>基本チャットボット機能</span></li>
                         <li class="flex items-start"><i class="fas fa-check-circle text-emerald-500 mr-3 mt-1"></i><span>Q&A登録 (100件まで)</span></li>
                         <li class="flex items-start"><i class="fas fa-check-circle text-emerald-500 mr-3 mt-1"></i><span>会話ログ閲覧 (過去7日分)</span></li>
-                        <li class="flex items-start"><i class="fas fa-check-circle text-emerald-500 mr-3 mt-1"></i><span>月2回の改善コンサルティング</span></li>
+                        <li class="flex items-start"><i class="fas fa-check-circle text-emerald-500 mr-3 mt-1"></i><span>メールによるテクニカルサポート</span></li>
                     </ul>
                     <form action="{{ url_for('create_checkout_session') }}" method="POST" class="mt-auto">
-                        <input type="hidden" name="price_id" value="price_1RzfvgDNOTStCQGSDHuFPfYi">
+                        <input type="hidden" name="price_id" value="price_YOUR_STARTER_PRICE_ID">
                         <button type="submit" class="w-full text-center bg-slate-200 text-slate-800 font-bold py-3 px-6 rounded-full hover:bg-slate-300 transition-colors">このプランで始める</button>
                     </form>
                 </div>
-
                 <div class="bg-white p-8 rounded-2xl shadow-2xl border-2 border-sky-500 relative flex flex-col">
                     <span class="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-sky-500 text-white text-sm font-bold px-4 py-1 rounded-full">一番人気</span>
                     <h3 class="text-2xl font-bold text-sky-600">プロフェッショナルプラン</h3>
@@ -132,15 +145,14 @@
                         <li class="flex items-start"><i class="fas fa-check-circle text-sky-500 mr-3 mt-1"></i><span>会話ログ閲覧・検索・エクスポート **無制限**</span></li>
                         <li class="flex items-start"><i class="fas fa-check-circle text-sky-500 mr-3 mt-1"></i><span>「Powered by LARUbot」ロゴ非表示</span></li>
                         <li class="flex items-start"><i class="fas fa-check-circle text-sky-500 mr-3 mt-1"></i><span>複数ユーザーでの管理機能</span></li>
-                        <li class="flex items-start"><i class="fas fa-check-circle text-sky-500 mr-3 mt-1"></i><span>専任チームによる月次運用コンサルティング</span></li>
-                        <li class="flex items-start"><i class="fas fa-check-circle text-sky-500 mr-3 mt-1"></i><span>会話ログ分析＆最適化レポート提出</span></li>
+                        <li class="flex items-start"><i class="fas fa-check-circle text-sky-500 mr-3 mt-1"></i><span><b>専任担当者によるプロアクティブ改善支援</b></span></li>
+                        <li class="flex items-start"><i class="fas fa-check-circle text-sky-500 mr-3 mt-1"></i><span>月次パフォーマンスレポート提出</span></li>
                     </ul>
                     <form action="{{ url_for('create_checkout_session') }}" method="POST" class="mt-auto">
-                        <input type="hidden" name="price_id" value="price_1RzfwLDNOTStCQGST3D2ebTV">
+                        <input type="hidden" name="price_id" value="price_YOUR_PRO_PRICE_ID">
                         <button type="submit" class="w-full text-center bg-sky-500 text-white font-bold py-3 px-6 rounded-full hover:bg-sky-600 transition-colors shadow-lg">このプランで始める</button>
                     </form>
                 </div>
-
                 <div class="bg-white p-8 rounded-2xl shadow-lg flex flex-col">
                     <h3 class="text-2xl font-bold">カスタマイズプラン</h3>
                     <p class="text-slate-500 mt-2 flex-grow">独自要件や外部システム連携が必要なエンタープライズ向け</p>
@@ -163,6 +175,7 @@
         </div>
     </section>
     
+    <!-- Feature Section -->
     <section id="features" class="py-24">
         <div class="container mx-auto px-6">
             <div class="text-center mb-16">
@@ -180,6 +193,7 @@
         </div>
     </section>
 
+    <!-- FAQ Section -->
     <section id="faq" class="bg-slate-100 py-24">
         <div class="container mx-auto px-6 max-w-3xl">
             <h2 class="text-4xl font-bold text-center mb-12">よくある質問</h2>
@@ -194,12 +208,13 @@
                 </div>
                 <div class="bg-white p-6 rounded-lg shadow-md faq-item">
                     <h3 class="faq-question font-bold text-lg flex justify-between items-center"><span>サポート体制について教えてください。</span><i class="fas fa-chevron-down transition-transform"></i></h3>
-                    <div class="faq-answer text-slate-600 pt-2"><p>スタータープラン、プロフェッショナルプラン共に、専任の担当者が導入から運用までをサポートするコンサルティングサービスが含まれています。ツールの提供だけでなく、成果を出すまで伴走いたします。</p></div>
+                    <div class="faq-answer text-slate-600 pt-2"><p>スタータープランではメールでの技術的なご質問に対応します。プロフェッショナルプランでは、専任の担当者が会話ログの分析や改善提案など、成果を出すためのプロアクティブな支援を行います。</p></div>
                 </div>
             </div>
         </div>
     </section>
 
+    <!-- Contact Section -->
     <section id="contact" class="py-24">
         <div class="container mx-auto px-6 max-w-2xl">
             <h2 class="text-4xl font-bold text-center mb-12">お問い合わせ</h2>
@@ -225,12 +240,29 @@
             </form>
         </div>
     </section>
+
+    <section id="company" class="bg-slate-100 py-24">
+        <div class="container mx-auto px-6 max-w-3xl">
+            <h2 class="text-4xl font-bold text-center mb-12">事業概要</h2>
+            <div class="bg-white shadow-md rounded-lg p-8">
+                <ul class="space-y-4 text-slate-700">
+                    <li><strong>事業者名:</strong> LARUbot</li>
+                    <li><strong>所在地:</strong> 〒170-0005 東京都豊島区南大塚１丁目２２−２</li>
+                    <li><strong>事業内容:</strong> AIチャットボットの開発・提供、ウェブサイト制作、システム開発</li>
+                    <li><strong>お問い合わせ:</strong>
+                        <a href="mailto:larubotchatbot@gmail.com" class="text-sky-500 hover:underline">larubotchatbot@gmail.com</a> / 
+                        <a href="tel:05017248283" class="text-sky-500 hover:underline">050-1724-8283</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </section>
 </main>
 
 <footer class="bg-gray-800 text-white py-12">
     <div class="container mx-auto px-6 text-center">
         <a href="#" class="text-3xl font-bold text-gradient">LARUbot</a>
-        <p class="text-slate-400 mt-2 mb-6">Gemini AI連携で業務を革新するAIチャットボット</p>
+        <p class="text-slate-400 mt-2 mb-6">会話を、価値に変えるAI。</p>
         <div class="flex justify-center space-x-6 mb-8">
              <a href="#reasons" class="text-slate-300 hover:text-white">選ばれる理由</a>
              <a href="#plans" class="text-slate-300 hover:text-white">料金プラン</a>
@@ -241,6 +273,7 @@
     </div>
 </footer>
 
+<!-- フローティングAIチャットウィジェット -->
 <div class="chat-container">
     <div id="chat-iframe-wrapper" class="chat-iframe-container hidden">
         <iframe src="https://chatbot-with-example2.onrender.com" class="w-full h-full border-0" title="LARUbot AI Chatbot"></iframe>

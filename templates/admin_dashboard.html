@@ -1,0 +1,56 @@
+{% extends "layout.html" %}
+
+{% block title %}管理者ダッシュボード - {{ super() }}{% endblock %}
+
+{% block page_header %}
+    <h1 class="text-xl font-semibold text-slate-800">管理者ダッシュボード</h1>
+{% endblock %}
+
+{% block content %}
+<div class="bg-white p-8 rounded-xl shadow-md">
+    <h2 class="text-2xl font-bold mb-6 text-slate-800">顧客管理</h2>
+    
+    <div class="overflow-x-auto">
+        <table class="min-w-full bg-white">
+            <thead class="bg-slate-100">
+                <tr>
+                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">ユーザーID</th>
+                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">メールアドレス</th>
+                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">プラン</th>
+                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Stripe顧客ID</th>
+                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">管理者</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200">
+                {% for target_user in all_users %}
+                <tr>
+                    <td class="py-4 px-4 whitespace-nowrap text-sm text-slate-500">{{ target_user.id }}</td>
+                    <td class="py-4 px-4 whitespace-nowrap text-sm font-medium text-slate-900">{{ target_user.email }}</td>
+                    <td class="py-4 px-4 whitespace-nowrap text-sm">
+                        {% if target_user.customer_data.plan == 'professional' %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-sky-100 text-sky-800">
+                                プロフェッショナル
+                            </span>
+                        {% elif target_user.customer_data.plan == 'starter' %}
+                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-100 text-emerald-800">
+                                スターター
+                            </span>
+                        {% else %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-slate-100 text-slate-800">
+                                フリー
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="py-4 px-4 whitespace-nowrap text-sm text-slate-500">{{ target_user.customer_data.stripe_customer_id or 'N/A' }}</td>
+                    <td class="py-4 px-4 whitespace-nowrap text-sm text-slate-500">
+                        {% if target_user.is_admin %}
+                            <i class="fas fa-check-circle text-green-500"></i>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

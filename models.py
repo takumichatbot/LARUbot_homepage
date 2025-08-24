@@ -6,9 +6,11 @@ db = SQLAlchemy()
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    # index=True を追加すると、メールアドレスでの検索が高速になります
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(200), nullable=False)
+    
+    # ▼▼▼【修正点】管理者フラグを追加 ▼▼▼
+    is_admin = db.Column(db.Boolean, nullable=False, default=False)
     
     # リレーションシップ
     customer_data = db.relationship('CustomerData', backref='user', uselist=False, cascade="all, delete-orphan")
@@ -24,8 +26,11 @@ class CustomerData(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, unique=True)
     bot_name = db.Column(db.String(100), default='My Chatbot')
     welcome_message = db.Column(db.String(500), default='こんにちは！何かご質問はありますか？')
-    # ホームページのテーマカラーに合わせてデフォルト値を変更
     header_color = db.Column(db.String(7), default='#0ea5e9')
+    
+    # ▼▼▼【修正点】Stripeのプラン情報を保存する列を追加 ▼▼▼
+    plan = db.Column(db.String(50), default='free') 
+    stripe_customer_id = db.Column(db.String(255), nullable=True)
     
     # リレーションシップ
     qas = db.relationship('QA', backref='customer_data', lazy='dynamic', cascade="all, delete-orphan")

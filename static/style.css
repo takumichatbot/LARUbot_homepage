@@ -170,3 +170,19 @@ body {
         transform: translateY(-5px);
     }
 }
+
+.chatbot-footer {
+    text-align: center;
+    padding: 8px;
+    font-size: 0.8em;
+    background-color: #f0f2f5;
+    border-top: 1px solid #ddd;
+}
+.chatbot-footer a {
+    color: #65676b;
+    text-decoration: none;
+    font-weight: 500;
+}
+.chatbot-footer a:hover {
+    text-decoration: underline;
+}
