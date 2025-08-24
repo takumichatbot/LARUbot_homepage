@@ -1,0 +1,20 @@
+# 仮想環境
+venv/
+
+# Pythonキャッシュ
+__pycache__/
+
+# DBファイル
+instance/
+*.sqlite3
+*.db
+
+# 環境変数ファイル（最重要！）
+.env
+.flaskenv
+
+# VS Code設定ファイル
+.vscode/
+
+# macOS固有ファイル
+.DS_Store
