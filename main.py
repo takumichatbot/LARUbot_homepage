@@ -107,7 +107,7 @@ def create_app(config_class=DevelopmentConfig):
         mail.send(msg)
     
     @app.route('/login', methods=['GET', 'POST'])
-def login():
+    def login():
     if current_user.is_authenticated: return redirect(url_for('dashboard'))
     if request.method == 'POST':
         email = request.form.get('email')
@@ -126,8 +126,8 @@ def login():
     return render_template('login.html')
 
 
-@app.route('/resend_confirmation', methods=['GET', 'POST'])
-def resend_confirmation():
+    @app.route('/resend_confirmation', methods=['GET', 'POST'])
+    def resend_confirmation():
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
     if request.method == 'POST':
