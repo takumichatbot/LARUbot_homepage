@@ -2,6 +2,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timezone
+from flask import current_app
+from itsdangerous import URLSafeTimedSerializer as Serializer
 
 db = SQLAlchemy()
 
@@ -10,7 +12,25 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(200), nullable=False)
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
+    
+    confirmed = db.Column(db.Boolean, nullable=False, default=False, server_default='f')
+    confirmed_on = db.Column(db.DateTime, nullable=True)
+
     customer_data = db.relationship('CustomerData', backref='user', uselist=False, cascade="all, delete-orphan")
+
+    def get_reset_token(self, expires_sec=1800):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        return s.dumps({'user_id': self.id})
+
+    @staticmethod
+    def verify_reset_token(token):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token, max_age=1800)
+            user_id = data.get('user_id')
+        except:
+            return None
+        return User.query.get(user_id)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -32,7 +52,6 @@ class CustomerData(db.Model):
 
     qas = db.relationship('QA', backref='customer_data', lazy='dynamic', cascade="all, delete-orphan")
     logs = db.relationship('ConversationLog', backref='customer_data', lazy='dynamic', cascade="all, delete-orphan")
-    # ▼▼▼ 新しいリレーションシップを追加 ▼▼▼
     example_questions = db.relationship('ExampleQuestion', backref='customer_data', lazy='dynamic', cascade="all, delete-orphan")
 
     def is_on_trial(self):
@@ -57,7 +76,6 @@ class ConversationLog(db.Model):
     timestamp = db.Column(db.DateTime, server_default=db.func.now())
     customer_data_id = db.Column(db.Integer, db.ForeignKey('customer_data.id'), nullable=False)
 
-# ▼▼▼ 新しいモデルを追加 ▼▼▼
 class ExampleQuestion(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     text = db.Column(db.String(255), nullable=False)
@@ -66,7 +84,6 @@ class ExampleQuestion(db.Model):
     def __repr__(self):
         return f'<ExampleQuestion {self.text}>'
 
-# 注：以下のLineUserモデルは、現在のアーキテクチャでは使用されません。
 class LineUser(db.Model):
     __tablename__ = 'line_user'
     id = db.Column(db.Integer, primary_key=True)

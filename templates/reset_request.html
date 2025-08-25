@@ -1,0 +1,19 @@
+{% extends "layout_public.html" %}
+{% block title %}パスワード再設定{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto mt-8">
+    <form method="POST" class="bg-white shadow-md rounded-xl px-8 pt-6 pb-8 mb-4">
+        <h2 class="text-2xl font-bold text-center mb-6">パスワード再設定</h2>
+        <p class="text-center text-slate-600 mb-6">登録したメールアドレスを入力してください。再設定用のリンクを送信します。</p>
+        <div class="mb-4">
+            <label class="block text-slate-700 text-sm font-bold mb-2" for="email">メールアドレス</label>
+            <input class="shadow appearance-none border rounded w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:shadow-outline" id="email" type="email" name="email" required>
+        </div>
+        <div class="flex items-center justify-between">
+            <button class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
+                送信
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
