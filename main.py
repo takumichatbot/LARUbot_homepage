@@ -2,6 +2,7 @@ import os
 import json
 import stripe
 import urllib.parse
+import re # 正規表現を扱うためにimportします
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, abort, current_app
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from email_validator import validate_email, EmailNotValidError
@@ -12,10 +13,17 @@ from functools import wraps
 from flask_migrate import Migrate
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
-from linebot.models import MessageEvent, TextMessage, TextSendMessage
+from linebot.models import (
+    MessageEvent, TextMessage, TextSendMessage,
+    QuickReply, QuickReplyButton, MessageAction # クイックリプライ関連のモデルをimportします
+)
+from dotenv import load_dotenv
 
 from models import db, User, CustomerData, QA, ConversationLog, ExampleQuestion
 from config import DevelopmentConfig
+
+# .envファイルを読み込みます
+load_dotenv()
 
 def create_app(config_class=DevelopmentConfig):
     app = Flask(__name__)
@@ -99,21 +107,43 @@ def create_app(config_class=DevelopmentConfig):
         mail.send(msg)
     
     @app.route('/login', methods=['GET', 'POST'])
-    def login():
-        if current_user.is_authenticated: return redirect(url_for('dashboard'))
-        if request.method == 'POST':
-            email = request.form.get('email')
-            password = request.form.get('password')
-            user = User.query.filter_by(email=email).first()
-            if user and user.check_password(password):
-                if not user.confirmed:
-                    flash('アカウントが有効化されていません。確認メールをご確認ください。', 'warning')
-                    return redirect(url_for('login'))
-                login_user(user)
-                return redirect(url_for('dashboard'))
+def login():
+    if current_user.is_authenticated: return redirect(url_for('dashboard'))
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        user = User.query.filter_by(email=email).first()
+        if user and user.check_password(password):
+            if not user.confirmed:
+                # ↓↓↓ このflashメッセージを修正します ↓↓↓
+                flash('アカウントが有効化されていません。 <a href="/resend_confirmation">確認メールを再送しますか？</a>', 'warning')
+                # ↑↑↑ ここまで修正 ↑↑↑
+                return redirect(url_for('login'))
+            login_user(user)
+            return redirect(url_for('dashboard'))
+        else:
+            flash('メールアドレスまたはパスワードが正しくありません。', 'danger')
+    return render_template('login.html')
+
+
+@app.route('/resend_confirmation', methods=['GET', 'POST'])
+def resend_confirmation():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    if request.method == 'POST':
+        email = request.form.get('email')
+        user = User.query.filter_by(email=email).first()
+        if user:
+            if user.confirmed:
+                flash('このアカウントは既に有効化されています。', 'info')
+                return redirect(url_for('login'))
             else:
-                flash('メールアドレスまたはパスワードが正しくありません。', 'danger')
-        return render_template('login.html')
+                send_confirmation_email(user)
+                flash('新しい確認メールを送信しました。メールボックスをご確認ください。', 'success')
+                return redirect(url_for('login'))
+        else:
+            flash('入力されたメールアドレスは登録されていません。', 'danger')
+    return render_template('resend_confirmation.html')
 
     @app.route('/register', methods=['GET', 'POST'])
     def register():
@@ -398,6 +428,7 @@ def create_app(config_class=DevelopmentConfig):
     def chatbot_page(user_id):
         customer_data = CustomerData.query.filter_by(user_id=user_id).first_or_404()
         example_questions = []
+        # プロフェッショナルプランの場合のみ、質問例を取得
         if customer_data.plan == 'professional':
             example_questions = customer_data.example_questions.order_by(ExampleQuestion.id.asc()).all()
         return render_template('chatbot_page.html', data=customer_data, example_questions=example_questions)
@@ -406,6 +437,8 @@ def create_app(config_class=DevelopmentConfig):
     def get_gemini_response(customer_data, user_message, session_id):
         # 1. ペルソナ（役割）設定
         bot_name = customer_data.bot_name or "アシスタント"
+        
+        # システムプロンプトにクイックリプライ生成の指示を追加
         system_prompt = f"""あなたは「{bot_name}」という名前の優秀なアシスタントです。
 以下の制約条件とナレッジを厳密に守って、ユーザーの質問に回答してください。
 
@@ -414,6 +447,8 @@ def create_app(config_class=DevelopmentConfig):
 - ナレッジに含まれる情報だけで回答できる場合は、その情報を元に回答してください。
 - ナレッジにない質問でも、一般的なことであればアシスタントとして回答してください。
 - わからない場合は、無理に回答せず「申し訳ありませんが、わかりかねます」と正直に伝えてください。
+- 回答の後に、ユーザーが次に尋ねそうな質問やアクションの選択肢がある場合は、
+  `[選択肢1, 選択肢2, 選択肢3]` の形式で提示してください。選択肢は3つ以内にしてください。
 
 # ナレッジ
 """
@@ -456,11 +491,32 @@ def create_app(config_class=DevelopmentConfig):
             ] + history)
 
             response = chat_session.send_message(user_message)
-            return response.text, []
+            
+            # クイックリプライの解析は後続の関数で行うため、ここでは元のテキストをそのまま返す
+            return response.text
 
         except Exception as e:
             print(f"Gemini API Error: {e}")
-            return "申し訳ありません、AIとの通信中にエラーが発生しました。", []
+            return "申し訳ありません、AIとの通信中にエラーが発生しました。"
+
+    def parse_response_for_quick_reply(text: str) -> (str, list):
+        """
+        AIの応答から [...] 形式の選択肢を抜き出す関数
+        Args:
+            text (str): AIからの応答文字列
+        Returns:
+            tuple: (本文, 選択肢リスト) のタプル。選択肢がなければリストは空。
+        """
+        match = re.search(r"\[(.*?)\]\s*$", text)
+        if match:
+            # [...]が見つかった場合
+            main_text = text[:match.start()].strip()
+            options_str = match.group(1)
+            options = [opt.strip() for opt in options_str.split(',')]
+            return main_text, options
+        else:
+            # [...]が見つからなかった場合
+            return text, []
 
     @app.route('/ask/<int:user_id>', methods=['POST'])
     def ask_chatbot(user_id):
@@ -471,7 +527,7 @@ def create_app(config_class=DevelopmentConfig):
         if not user_message or not session_id:
             return jsonify({'answer': '不正なリクエストです。', "follow_up_questions": []})
         
-        answer, follow_up_questions = get_gemini_response(customer_data, user_message, session_id)
+        answer = get_gemini_response(customer_data, user_message, session_id)
         
         try:
             new_log = ConversationLog(
@@ -486,7 +542,8 @@ def create_app(config_class=DevelopmentConfig):
             db.session.rollback()
             print(f"ログ保存エラー: {e}")
 
-        return jsonify({"answer": answer, "follow_up_questions": follow_up_questions})
+        # Webチャットではクイックリプライを実装しないため、そのまま返す
+        return jsonify({"answer": answer})
     
     # --- ▲▲▲ ここまでAI関連の関数を更新 ▲▲▲ ---
 
@@ -498,16 +555,13 @@ def create_app(config_class=DevelopmentConfig):
         for customer in all_customers:
             handler = WebhookHandler(customer.line_channel_secret)
             try:
-                # 本番環境ではhandleのままで良いが、複数ボットを捌くためparseを直接使う
                 events = handler.parser.parse(body, signature)
                 for event in events:
                     if isinstance(event, MessageEvent) and isinstance(event.message, TextMessage):
                         handle_message(event, customer)
                 return 'OK'
             except InvalidSignatureError:
-                # 署名が一致しない場合は次のカスタマーのシークレットで試す
                 continue
-        # どのカスタマーの署名とも一致しなかった場合
         abort(400)
 
     # --- ▼▼▼ LINE関連の関数を更新 ▼▼▼ ---
@@ -521,12 +575,13 @@ def create_app(config_class=DevelopmentConfig):
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
             return
         
-        answer, _ = get_gemini_response(customer_data, user_message, session_id)
+        # Geminiから応答を取得
+        answer_from_ai = get_gemini_response(customer_data, user_message, session_id)
         
         try:
             new_log = ConversationLog(
                 user_question=user_message, 
-                bot_answer=answer, 
+                bot_answer=answer_from_ai, 
                 customer_data=customer_data,
                 session_id=session_id
             )
@@ -535,8 +590,35 @@ def create_app(config_class=DevelopmentConfig):
         except Exception as e:
             db.session.rollback()
             print(f"ログ保存エラー: {e}")
+        
+        # === ここからクイックリプライのロジックを実装 ===
+        message = None
+        if customer_data.plan == 'professional':
+            main_text, options = parse_response_for_quick_reply(answer_from_ai)
             
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=answer))
+            if options:
+                # 1. AIが動的な選択肢 [...] を生成した場合
+                buttons = [QuickReplyButton(action=MessageAction(label=opt, text=opt)) for opt in options]
+                message = TextSendMessage(
+                    text=main_text,
+                    quick_reply=QuickReply(items=buttons)
+                )
+            else:
+                # 2. AIが選択肢を生成しなかった場合、固定の質問例ボタンを表示
+                example_questions = customer_data.example_questions.order_by(ExampleQuestion.id.asc()).all()
+                if example_questions:
+                    buttons = [QuickReplyButton(action=MessageAction(label=eq.text, text=eq.text)) for eq in example_questions]
+                    message = TextSendMessage(
+                        text=answer_from_ai,
+                        quick_reply=QuickReply(items=buttons)
+                    )
+        
+        # どの条件にも当てはまらない（例：starter/freeプラン）場合は、通常のテキストメッセージ
+        if not message:
+            message = TextSendMessage(text=answer_from_ai)
+
+        line_bot_api.reply_message(event.reply_token, message)
+
     # --- ▲▲▲ LINE関連の関数を更新 ▲▲▲ ---
 
     @app.route('/admin')

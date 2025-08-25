@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>確認メールの再送信 - LARUbot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-100 flex items-center justify-center min-h-screen">
+    <div class="w-full max-w-md">
+        <div class="bg-white shadow-md rounded-lg px-8 pt-6 pb-8 mb-4">
+            <h1 class="text-2xl font-bold text-center mb-6">確認メールの再送信</h1>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="mb-4 px-4 py-3 rounded relative 
+                            {% if category == 'danger' %} bg-red-100 border border-red-400 text-red-700 
+                            {% elif category == 'success' %} bg-green-100 border border-green-400 text-green-700
+                            {% else %} bg-blue-100 border border-blue-400 text-blue-700 {% endif %}"
+                            role="alert">
+                            <span class="block sm:inline">{{ message|safe }}</span>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <p class="text-gray-600 text-center mb-6">登録したメールアドレスを入力してください。<br>新しいアカウント有効化メールを送信します。</p>
+
+            <form method="POST" action="{{ url_for('resend_confirmation') }}">
+                <div class="mb-4">
+                    <label for="email" class="block text-gray-700 text-sm font-bold mb-2">
+                        メールアドレス
+                    </label>
+                    <input id="email" name="email" type="email" required
+                           class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                </div>
+                
+                <div class="flex items-center justify-between">
+                    <button type="submit"
+                            class="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                        再送信する
+                    </button>
+                </div>
+            </form>
+            <p class="text-center text-gray-500 text-xs mt-6">
+                <a href="{{ url_for('login') }}" class="font-bold text-sky-500 hover:text-sky-700">
+                    ログインページに戻る
+                </a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
