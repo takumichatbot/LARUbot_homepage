@@ -522,5 +522,26 @@ def make_admin_command():
     db.session.commit()
     print(f"成功: ユーザー '{email}' が管理者に設定されました。")
 
+    @app.cli.command("change-plan")
+def change_plan_command():
+    """ユーザーの契約プランを変更します。"""
+    email = input("ユーザーのメールアドレスを入力してください: ")
+    user = User.query.filter_by(email=email).first()
+
+    if not user:
+        print(f"エラー: ユーザー '{email}' が見つかりません。")
+        return
+
+    print(f"{email} の現在のプランは '{user.customer_data.plan}' です。")
+    new_plan = input("新しいプラン名を入力してください (例: trial, starter, professional): ")
+
+    if new_plan not in ['trial', 'starter', 'professional']:
+        print(f"エラー: 無効なプラン名 '{new_plan}' です。")
+        return
+
+    user.customer_data.plan = new_plan
+    db.session.commit()
+    print(f"成功: ユーザー '{email}' のプランを '{new_plan}' に更新しました。")
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5005, debug=True)
