@@ -402,23 +402,93 @@ def create_app(config_class=DevelopmentConfig):
             example_questions = customer_data.example_questions.order_by(ExampleQuestion.id.asc()).all()
         return render_template('chatbot_page.html', data=customer_data, example_questions=example_questions)
 
-    def get_gemini_response(customer_data, user_message):
-        # Placeholder for Gemini API logic
-        return "AI response placeholder", []
+    # --- ▼▼▼ ここからAI関連の関数を更新 ▼▼▼ ---
+    def get_gemini_response(customer_data, user_message, session_id):
+        # 1. ペルソナ（役割）設定
+        bot_name = customer_data.bot_name or "アシスタント"
+        system_prompt = f"""あなたは「{bot_name}」という名前の優秀なアシスタントです。
+以下の制約条件とナレッジを厳密に守って、ユーザーの質問に回答してください。
+
+# 制約条件
+- 簡潔かつ丁寧に回答してください。
+- ナレッジに含まれる情報だけで回答できる場合は、その情報を元に回答してください。
+- ナレッジにない質問でも、一般的なことであればアシスタントとして回答してください。
+- わからない場合は、無理に回答せず「申し訳ありませんが、わかりかねます」と正直に伝えてください。
+
+# ナレッジ
+"""
+
+        # 2. ナレッジ（Q&Aデータ）の読み込みと活用
+        knowledge_text = "（ナレッジはありません）"
+        knowledge_filepath = os.path.join('static/knowledge', f"knowledge_{customer_data.user_id}.json")
+        if os.path.exists(knowledge_filepath):
+            try:
+                with open(knowledge_filepath, 'r', encoding='utf-8') as f:
+                    knowledge_data = json.load(f).get("data", {})
+                    if knowledge_data:
+                        knowledge_text = "\n".join([f"- Q: {q}\n  A: {a}" for q, a in knowledge_data.items()])
+            except (IOError, json.JSONDecodeError) as e:
+                print(f"ナレッジファイルの読み込みエラー: {e}")
+
+        # 3. 会話履歴の取得と整形
+        history = []
+        try:
+            # 直近5往復の会話を取得
+            recent_logs = ConversationLog.query.filter_by(customer_data_id=customer_data.id, session_id=session_id)\
+                                               .order_by(ConversationLog.timestamp.desc()).limit(5).all()
+            recent_logs.reverse() # 時系列を昇順に戻す
+            
+            for log in recent_logs:
+                history.append({'role': 'user', 'parts': [log.user_question]})
+                if log.bot_answer:
+                    history.append({'role': 'model', 'parts': [log.bot_answer]})
+        except Exception as e:
+            print(f"会話履歴の取得エラー: {e}")
+
+        # 4. Gemini API呼び出し
+        try:
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            full_prompt = system_prompt + knowledge_text
+            
+            chat_session = model.start_chat(history=[
+                {'role': 'user', 'parts': [full_prompt]},
+                {'role': 'model', 'parts': ["承知いたしました。ユーザーからの質問にお答えします。"]}
+            ] + history)
+
+            response = chat_session.send_message(user_message)
+            return response.text, []
+
+        except Exception as e:
+            print(f"Gemini API Error: {e}")
+            return "申し訳ありません、AIとの通信中にエラーが発生しました。", []
 
     @app.route('/ask/<int:user_id>', methods=['POST'])
     def ask_chatbot(user_id):
         customer_data = CustomerData.query.filter_by(user_id=user_id).first_or_404()
         user_message = request.json.get('message')
-        if not user_message: return jsonify({'answer': '質問が空です。', "follow_up_questions": []})
-        answer, follow_up_questions = get_gemini_response(customer_data, user_message)
+        session_id = request.json.get('session_id')
+
+        if not user_message or not session_id:
+            return jsonify({'answer': '不正なリクエストです。', "follow_up_questions": []})
+        
+        answer, follow_up_questions = get_gemini_response(customer_data, user_message, session_id)
+        
         try:
-            new_log = ConversationLog(user_question=user_message, bot_answer=answer, customer_data=customer_data)
+            new_log = ConversationLog(
+                user_question=user_message, 
+                bot_answer=answer, 
+                customer_data=customer_data, 
+                session_id=session_id
+            )
             db.session.add(new_log)
             db.session.commit()
         except Exception as e:
             db.session.rollback()
+            print(f"ログ保存エラー: {e}")
+
         return jsonify({"answer": answer, "follow_up_questions": follow_up_questions})
+    
+    # --- ▲▲▲ ここまでAI関連の関数を更新 ▲▲▲ ---
 
     @app.route("/line-webhook", methods=['POST'])
     def line_webhook():
@@ -428,31 +498,46 @@ def create_app(config_class=DevelopmentConfig):
         for customer in all_customers:
             handler = WebhookHandler(customer.line_channel_secret)
             try:
-                handler.handle(body, signature)
+                # 本番環境ではhandleのままで良いが、複数ボットを捌くためparseを直接使う
                 events = handler.parser.parse(body, signature)
                 for event in events:
                     if isinstance(event, MessageEvent) and isinstance(event.message, TextMessage):
                         handle_message(event, customer)
                 return 'OK'
             except InvalidSignatureError:
+                # 署名が一致しない場合は次のカスタマーのシークレットで試す
                 continue
+        # どのカスタマーの署名とも一致しなかった場合
         abort(400)
 
+    # --- ▼▼▼ LINE関連の関数を更新 ▼▼▼ ---
     def handle_message(event, customer_data):
         user_message = event.message.text
         line_bot_api = LineBotApi(customer_data.line_channel_token)
+        session_id = event.source.user_id
+
         if customer_data.plan == 'trial' and not customer_data.is_on_trial():
             reply_text = "無料トライアルは終了しました。"
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
             return
-        answer, _ = get_gemini_response(customer_data, user_message)
+        
+        answer, _ = get_gemini_response(customer_data, user_message, session_id)
+        
         try:
-            new_log = ConversationLog(user_question=user_message, bot_answer=answer, customer_data=customer_data)
+            new_log = ConversationLog(
+                user_question=user_message, 
+                bot_answer=answer, 
+                customer_data=customer_data,
+                session_id=session_id
+            )
             db.session.add(new_log)
             db.session.commit()
         except Exception as e:
             db.session.rollback()
+            print(f"ログ保存エラー: {e}")
+            
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text=answer))
+    # --- ▲▲▲ LINE関連の関数を更新 ▲▲▲ ---
 
     @app.route('/admin')
     @login_required

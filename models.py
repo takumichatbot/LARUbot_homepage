@@ -71,6 +71,7 @@ class QA(db.Model):
 
 class ConversationLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(db.String(100), nullable=False, index=True)
     user_question = db.Column(db.Text, nullable=False)
     bot_answer = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, server_default=db.func.now())

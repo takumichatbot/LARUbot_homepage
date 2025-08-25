@@ -10,6 +10,51 @@
 {% endblock %}
 
 {% block content %}
+<style>
+    .tooltip-container {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+    }
+    .tooltip-icon {
+        margin-left: 8px;
+        color: #94a3b8; /* slate-400 */
+        cursor: pointer;
+    }
+    .tooltip-text {
+        visibility: hidden;
+        width: 250px;
+        background-color: #1e293b; /* slate-800 */
+        color: #fff;
+        text-align: left;
+        border-radius: 6px;
+        padding: 8px 12px;
+        position: absolute;
+        z-index: 10;
+        bottom: 125%;
+        left: 50%;
+        margin-left: -125px; /* widthの半分 */
+        opacity: 0;
+        transition: opacity 0.3s;
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+        font-weight: normal; /* ラベルの太さを継承しないように */
+    }
+    .tooltip-text::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: #1e293b transparent transparent transparent;
+    }
+    .tooltip-container:hover .tooltip-text {
+        visibility: visible;
+        opacity: 1;
+    }
+</style>
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
     
     <div class="lg:col-span-2 bg-white p-8 rounded-xl shadow-md">
@@ -47,16 +92,27 @@
                 </p>
                 
                 <div class="mb-6">
-                    <label for="line_channel_token" class="block text-slate-700 text-sm font-bold mb-2">チャネルアクセストークン (長期)</label>
+                    <label for="line_channel_token" class="block text-slate-700 text-sm font-bold mb-2">
+                        <div class="tooltip-container">
+                            <span>チャネルアクセストークン (長期)</span>
+                            <i class="fas fa-question-circle tooltip-icon"></i>
+                            <span class="tooltip-text">LINE Developersコンソールで発行される、ボットがユーザーにメッセージを送るために必要な長い文字列のキーです。</span>
+                        </div>
+                    </label>
                     <input type="password" id="line_channel_token" name="line_channel_token" value="{{ data.line_channel_token or '' }}" class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-sky-500">
                 </div>
                 
                 <div class="mb-6">
-                    <label for="line_channel_secret" class="block text-slate-700 text-sm font-bold mb-2">チャネルシークレット</label>
+                    <label for="line_channel_secret" class="block text-slate-700 text-sm font-bold mb-2">
+                         <div class="tooltip-container">
+                            <span>チャネルシークレット</span>
+                            <i class="fas fa-question-circle tooltip-icon"></i>
+                            <span class="tooltip-text">LINEプラットフォームからの通信が正当なものであることを確認するために使用されるキーです。LINE Developersコンソールで確認できます。</span>
+                        </div>
+                    </label>
                     <input type="password" id="line_channel_secret" name="line_channel_secret" value="{{ data.line_channel_secret or '' }}" class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-sky-500">
                 </div>
             </div>
-            
             <div class="mt-8 text-right">
                 <button type="submit" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-lg focus:outline-none focus:shadow-outline transition-colors shadow-lg hover:shadow-xl">
                     <i class="fas fa-save mr-2"></i> 保存する
@@ -108,7 +164,6 @@
 
     colorCodeText.addEventListener('input', (e) => {
         const color = e.target.value;
-        // A simple validation for hex color code
         if (/^#[0-9A-F]{6}$/i.test(color)) {
             previewHeader.style.backgroundColor = color;
             colorPicker.value = color;
