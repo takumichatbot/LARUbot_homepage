@@ -88,24 +88,29 @@ def create_app(config_class=DevelopmentConfig):
             return f(*args, **kwargs)
         return decorated_function
 
+    # === send_reset_email 関数の sender を修正します ===
     def send_reset_email(user):
         token = user.get_reset_token()
-        msg = Message('パスワード再設定リクエスト', sender=current_app.config['MAIL_DEFAULT_SENDER'], recipients=[user.email])
+        msg = Message('パスワード再設定リクエスト', sender=current_app.config['MAIL_USERNAME'], recipients=[user.email])
         msg.body = f'''パスワードを再設定するには、以下のリンクをクリックしてください (有効期限30分):
 {url_for('reset_token', token=token, _external=True)}
 
 もしこのリクエストに心当たりがない場合は、このメールを無視してください。
 '''
         mail.send(msg)
+    # === 修正終わり ===
 
+    # === send_confirmation_email 関数の sender を修正します ===
     def send_confirmation_email(user):
         token = user.get_reset_token(expires_sec=86400)
-        msg = Message('アカウントの有効化', sender=current_app.config['MAIL_DEFAULT_SENDER'], recipients=[user.email])
+        msg = Message('アカウントの有効化', sender=current_app.config['MAIL_USERNAME'], recipients=[user.email])
         msg.body = f'''アカウントを有効化するには、以下のリンクをクリックしてください:
 {url_for('confirm_email', token=token, _external=True)}
 '''
         mail.send(msg)
+    # === 修正終わり ===
     
+    # === login() 関数のインデントとflashメッセージを修正します ===
     @app.route('/login', methods=['GET', 'POST'])
     def login():
         if current_user.is_authenticated: return redirect(url_for('dashboard'))
@@ -122,7 +127,9 @@ def create_app(config_class=DevelopmentConfig):
             else:
                 flash('メールアドレスまたはパスワードが正しくありません。', 'danger')
         return render_template('login.html')
+    # === 修正終わり ===
 
+    # === resend_confirmation() 関数を新たに追加します ===
     @app.route('/resend_confirmation', methods=['GET', 'POST'])
     def resend_confirmation():
         if current_user.is_authenticated:
@@ -141,6 +148,7 @@ def create_app(config_class=DevelopmentConfig):
             else:
                 flash('入力されたメールアドレスは登録されていません。', 'danger')
         return render_template('resend_confirmation.html')
+    # === 修正終わり ===
 
     @app.route('/register', methods=['GET', 'POST'])
     def register():
@@ -242,9 +250,18 @@ def create_app(config_class=DevelopmentConfig):
     @login_required
     def dashboard():
         customer_data = current_user.customer_data
-        if customer_data.plan == 'trial' and not customer_data.is_on_trial():
+        
+        # === ダッシュボードで表示するフラッシュメッセージをここに一元化します ===
+        if customer_data.plan == 'trial' and customer_data.is_on_trial():
+            remaining_days = (customer_data.trial_ends_at - datetime.utcnow()).days
+            if remaining_days < 0: remaining_days = 0
+            message = f"スタータープランの無料トライアル中です！トライアルはあと <span class='font-bold'>{remaining_days}日</span> で終了します。 <a href='{url_for('index')}#pricing' class='font-bold underline hover:text-yellow-800'>有料プランにアップグレード</a>"
+            flash(message, 'warning')
+        elif customer_data.plan == 'trial' and not customer_data.is_on_trial():
             flash('無料トライアルは終了しました。引き続きサービスをご利用いただくには、有料プランへのアップグレードが必要です。', 'warning')
+
         return render_template('dashboard.html', user=current_user, data=customer_data)
+    # === 修正終わり ===
 
     @app.route('/settings', methods=['GET', 'POST'])
     @login_required
