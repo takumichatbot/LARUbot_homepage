@@ -30,18 +30,22 @@ class CustomerData(db.Model):
     
     trial_ends_at = db.Column(db.DateTime, nullable=True)
 
+    # ▼▼▼【ここを修正】顧客ごとのLINE認証情報を保存するカラムを追加 ▼▼▼
+    line_channel_token = db.Column(db.String(255), nullable=True)
+    line_channel_secret = db.Column(db.String(255), nullable=True)
+    # ▲▲▲【ここまで】▲▲▲
+
     qas = db.relationship('QA', backref='customer_data', lazy='dynamic', cascade="all, delete-orphan")
     logs = db.relationship('ConversationLog', backref='customer_data', lazy='dynamic', cascade="all, delete-orphan")
 
     def is_on_trial(self):
         """トライアル期間中かどうかを判定する"""
-        return self.trial_ends_at and self.trial_ends_at > datetime.utcnow() # 'now(timezone.utc)' -> 'utcnow()' に修正済み
+        return self.trial_ends_at and self.trial_ends_at > datetime.utcnow()
 
     def trial_days_remaining(self):
         """トライアルの残り日数を計算する"""
         if not self.is_on_trial():
             return 0
-        # is_on_trialがutcnow()を使うので、ここも合わせてutcnow()を使用
         delta = self.trial_ends_at - datetime.utcnow()
         return delta.days + 1
         
@@ -58,6 +62,8 @@ class ConversationLog(db.Model):
     timestamp = db.Column(db.DateTime, server_default=db.func.now())
     customer_data_id = db.Column(db.Integer, db.ForeignKey('customer_data.id'), nullable=False)
 
+# 注：LineUserモデルは、新しいアーキテクチャでは使用されなくなりました。
+# データベースから削除するにはマイグレーションが必要ですが、ひとまず残しておいても問題ありません。
 class LineUser(db.Model):
     __tablename__ = 'line_user'
     id = db.Column(db.Integer, primary_key=True)

@@ -38,6 +38,24 @@
                     </div>
                 </div>
             </div>
+
+            <div class="mt-8 border-t pt-8">
+                <h3 class="text-xl font-bold mb-4 text-slate-800 border-b pb-2">LINE公式アカウント連携</h3>
+                <p class="text-slate-500 text-sm mb-4">
+                    ご自身で作成したLINE公式アカウントの認証情報を入力してください。
+                    <a href="https://developers.line.biz/ja/docs/messaging-api/getting-started/" target="_blank" class="text-sky-600 hover:underline">取得方法はこちら</a>
+                </p>
+                
+                <div class="mb-6">
+                    <label for="line_channel_token" class="block text-slate-700 text-sm font-bold mb-2">チャネルアクセストークン (長期)</label>
+                    <input type="password" id="line_channel_token" name="line_channel_token" value="{{ data.line_channel_token or '' }}" class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-sky-500">
+                </div>
+                
+                <div class="mb-6">
+                    <label for="line_channel_secret" class="block text-slate-700 text-sm font-bold mb-2">チャネルシークレット</label>
+                    <input type="password" id="line_channel_secret" name="line_channel_secret" value="{{ data.line_channel_secret or '' }}" class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-sky-500">
+                </div>
+            </div>
             
             <div class="mt-8 text-right">
                 <button type="submit" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-lg focus:outline-none focus:shadow-outline transition-colors shadow-lg hover:shadow-xl">
@@ -83,13 +101,18 @@
     });
     
     colorPicker.addEventListener('input', (e) => {
-        previewHeader.style.backgroundColor = e.target.value;
-        colorCodeText.value = e.target.value;
+        const color = e.target.value;
+        previewHeader.style.backgroundColor = color;
+        colorCodeText.value = color;
     });
 
     colorCodeText.addEventListener('input', (e) => {
-        previewHeader.style.backgroundColor = e.target.value;
-        colorPicker.value = e.target.value;
+        const color = e.target.value;
+        // A simple validation for hex color code
+        if (/^#[0-9A-F]{6}$/i.test(color)) {
+            previewHeader.style.backgroundColor = color;
+            colorPicker.value = color;
+        }
     });
 </script>
 {% endblock %}
