@@ -522,7 +522,7 @@ def make_admin_command():
     db.session.commit()
     print(f"成功: ユーザー '{email}' が管理者に設定されました。")
 
-    @app.cli.command("change-plan")
+@app.cli.command("change-plan")
 def change_plan_command():
     """ユーザーの契約プランを変更します。"""
     email = input("ユーザーのメールアドレスを入力してください: ")
