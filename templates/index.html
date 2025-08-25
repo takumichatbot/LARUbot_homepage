@@ -2,17 +2,13 @@
 <html lang="ja" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
-    <!-- ▼▼▼ Google Analyticsのコードをここに設定 ▼▼▼ -->
-    <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-6BF1QV6ZF7"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-
       gtag('config', 'G-6BF1QV6ZF7');
     </script>
-    <!-- ▲▲▲ ここまで ▲▲▲ -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LARUbot | 会話を、価値に変えるAI。</title>
     <meta name="description" content="LARUbotは、顧客との対話からビジネスの価値を創造するAIチャットボットです。問い合わせ対応を自動化し、業務効率化と顧客満足度向上を実現します。">
@@ -30,7 +26,6 @@
 </head>
 <body class="bg-slate-50 text-slate-800">
 
-<!-- Header -->
 <header class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md shadow-sm">
     <div class="container mx-auto px-6 py-3 flex justify-between items-center">
         <a href="{{ url_for('index') }}" class="text-3xl font-bold text-gradient">LARUbot</a>
@@ -59,7 +54,6 @@
 </header>
 
 <main>
-    <!-- Hero Section -->
     <section class="hero-bg text-white pt-40 pb-24">
         <div class="container mx-auto px-6 text-center">
             <h1 class="text-4xl md:text-6xl font-extrabold leading-tight tracking-tight mb-6">
@@ -79,7 +73,6 @@
         </div>
     </section>
 
-    <!-- Reasons to Choose LARUbot -->
     <section id="reasons" class="py-24">
         <div class="container mx-auto px-6">
             <div class="text-center mb-16">
@@ -106,53 +99,34 @@
         </div>
     </section>
 
-    <!-- Pricing Section -->
     <section id="plans" class="bg-slate-100 py-24">
         <div class="container mx-auto px-6">
             <div class="text-center mb-16">
-                <h2 class="text-4xl font-bold mb-4">貴社に最適な料金プラン</h2>
-                <p class="text-slate-600 text-lg">全プラン初期費用は無料。事業の成長に合わせて柔軟に選べるプランをご用意しております。</p>
+                <h2 class="text-4xl font-bold mb-4">シンプルで強力な料金プラン</h2>
+                <p class="text-slate-600 text-lg">初期費用は無料。ビジネスの成長に必要なすべての機能を、一つのプランでご提供します。</p>
             </div>
-            <div class="grid lg:grid-cols-3 gap-8 items-stretch">
-                <div class="bg-white p-8 rounded-2xl shadow-lg flex flex-col">
-                    <h3 class="text-2xl font-bold">スタータープラン</h3>
-                    <p class="text-slate-500 mt-2 flex-grow">AI導入をスタートするための本格的な基本プラン</p>
+            <div class="grid lg:grid-cols-2 gap-8 items-stretch max-w-4xl mx-auto">
+                
+                <div class="bg-white p-8 rounded-2xl shadow-2xl border-2 border-sky-500 relative flex flex-col">
+                    <span class="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-sky-500 text-white text-sm font-bold px-4 py-1 rounded-full">おすすめ</span>
+                    <h3 class="text-2xl font-bold text-sky-600">スタータープラン</h3>
+                    <p class="text-slate-500 mt-2 flex-grow">AI導入とビジネスの成長に必要なすべての機能を網羅</p>
                     <div class="mt-8">
                         <p class="text-5xl font-extrabold text-slate-900">¥25,000<span class="text-xl font-medium text-slate-500"> / 月</span></p>
                     </div>
                     <ul class="space-y-4 my-8 text-slate-700 flex-grow">
-                        <li class="flex items-start"><i class="fas fa-check-circle text-emerald-500 mr-3 mt-1"></i><span>基本チャットボット機能</span></li>
-                        <li class="flex items-start"><i class="fas fa-check-circle text-emerald-500 mr-3 mt-1"></i><span>Q&A登録 (100件まで)</span></li>
-                        <li class="flex items-start"><i class="fas fa-check-circle text-emerald-500 mr-3 mt-1"></i><span>会話ログ閲覧 (過去7日分)</span></li>
-                        <li class="flex items-start"><i class="fas fa-check-circle text-emerald-500 mr-3 mt-1"></i><span>メールによるテクニカルサポート</span></li>
+                        <li class="flex items-start"><i class="fas fa-check-circle text-sky-500 mr-3 mt-1"></i><span>基本チャットボット機能</span></li>
+                        <li class="flex items-start"><i class="fas fa-check-circle text-sky-500 mr-3 mt-1"></i><span>会話開始を促す「質問例」提示機能</span></li>
+                        <li class="flex items-start"><i class="fas fa-check-circle text-sky-500 mr-3 mt-1"></i><span>Q&A登録 (100件まで)</span></li>
+                        <li class="flex items-start"><i class="fas fa-check-circle text-sky-500 mr-3 mt-1"></i><span>会話ログ閲覧 (過去7日分)</span></li>
+                        <li class="flex items-start"><i class="fas fa-check-circle text-sky-500 mr-3 mt-1"></i><span>メールによるテクニカルサポート</span></li>
                     </ul>
                     <form action="{{ url_for('create_checkout_session') }}" method="POST" class="mt-auto">
                         <input type="hidden" name="price_id" value="price_YOUR_STARTER_PRICE_ID">
-                        <button type="submit" class="w-full text-center bg-slate-200 text-slate-800 font-bold py-3 px-6 rounded-full hover:bg-slate-300 transition-colors">このプランで始める</button>
-                    </form>
-                </div>
-                <div class="bg-white p-8 rounded-2xl shadow-2xl border-2 border-sky-500 relative flex flex-col">
-                    <span class="absolute top-0 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-sky-500 text-white text-sm font-bold px-4 py-1 rounded-full">一番人気</span>
-                    <h3 class="text-2xl font-bold text-sky-600">プロフェッショナルプラン</h3>
-                    <p class="text-slate-500 mt-2 flex-grow">AIを事業のプロとして活用し、成果を出すためのプラン</p>
-                    <div class="mt-8">
-                        <p class="text-5xl font-extrabold text-slate-900">¥50,000<span class="text-xl font-medium text-slate-500"> / 月</span></p>
-                    </div>
-                    <ul class="space-y-4 my-8 text-slate-700 flex-grow">
-                        <li class="flex items-start"><i class="fas fa-check-circle text-sky-500 mr-3 mt-1"></i><span><b>スタータープランの全機能</b></span></li>
-                        <li class="flex items-start"><i class="fas fa-check-circle text-sky-500 mr-3 mt-1"></i><span>会話開始を促す「質問例」提示機能</span></li>
-                        <li class="flex items-start"><i class="fas fa-check-circle text-sky-500 mr-3 mt-1"></i><span>Q&A登録 **無制限**</span></li>
-                        <li class="flex items-start"><i class="fas fa-check-circle text-sky-500 mr-3 mt-1"></i><span>会話ログ閲覧・検索・エクスポート **無制限**</span></li>
-                        <li class="flex items-start"><i class="fas fa-check-circle text-sky-500 mr-3 mt-1"></i><span>「Powered by LARUbot」ロゴ非表示</span></li>
-                        <li class="flex items-start"><i class="fas fa-check-circle text-sky-500 mr-3 mt-1"></i><span>複数ユーザーでの管理機能</span></li>
-                        <li class="flex items-start"><i class="fas fa-check-circle text-sky-500 mr-3 mt-1"></i><span><b>専任担当者によるプロアクティブ改善支援</b></span></li>
-                        <li class="flex items-start"><i class="fas fa-check-circle text-sky-500 mr-3 mt-1"></i><span>月次パフォーマンスレポート提出</span></li>
-                    </ul>
-                    <form action="{{ url_for('create_checkout_session') }}" method="POST" class="mt-auto">
-                        <input type="hidden" name="price_id" value="price_YOUR_PRO_PRICE_ID">
                         <button type="submit" class="w-full text-center bg-sky-500 text-white font-bold py-3 px-6 rounded-full hover:bg-sky-600 transition-colors shadow-lg">このプランで始める</button>
                     </form>
                 </div>
+
                 <div class="bg-white p-8 rounded-2xl shadow-lg flex flex-col">
                     <h3 class="text-2xl font-bold">カスタマイズプラン</h3>
                     <p class="text-slate-500 mt-2 flex-grow">独自要件や外部システム連携が必要なエンタープライズ向け</p>
@@ -161,11 +135,11 @@
                         <p class="text-slate-600 mt-2">（初期費用 300,000円〜）</p>
                     </div>
                     <ul class="space-y-3 my-8 text-slate-700 flex-grow">
-                        <li class="flex items-start"><i class="fas fa-check-circle text-emerald-500 mr-3 mt-1"></i><span>プロフェッショナルプランの全機能</span></li>
+                        <li class="flex items-start"><i class="fas fa-check-circle text-emerald-500 mr-3 mt-1"></i><span>スタータープランの全機能</span></li>
                         <li class="flex items-start"><i class="fas fa-check-circle text-emerald-500 mr-3 mt-1"></i><span>カスタムUIデザイン・実装</span></li>
                         <li class="flex items-start"><i class="fas fa-check-circle text-emerald-500 mr-3 mt-1"></i><span>専用データベース環境の構築</span></li>
                         <li class="flex items-start"><i class="fas fa-check-circle text-emerald-500 mr-3 mt-1"></i><span>基幹システムとのAPI連携</span></li>
-                        <li class="flex items-start"><i class="fas fa-check-circle text-emerald-500 mr-3 mt-1"></i><span>SLA（サービス品質保証）のご提供</span></li>
+                        <li class="flex items-start"><i class="fas fa-check-circle text-emerald-500 mr-3 mt-1"></i><span>専任担当者によるプロアクティブ改善支援</span></li>
                     </ul>
                     <a href="#contact" class="w-full block text-center bg-slate-800 text-white font-bold py-3 px-6 rounded-full hover:bg-slate-900 transition-colors mt-auto">
                         まずはお問い合わせ
@@ -175,7 +149,6 @@
         </div>
     </section>
     
-    <!-- Feature Section -->
     <section id="features" class="py-24">
         <div class="container mx-auto px-6">
             <div class="text-center mb-16">
@@ -193,7 +166,6 @@
         </div>
     </section>
 
-    <!-- FAQ Section -->
     <section id="faq" class="bg-slate-100 py-24">
         <div class="container mx-auto px-6 max-w-3xl">
             <h2 class="text-4xl font-bold text-center mb-12">よくある質問</h2>
@@ -214,7 +186,6 @@
         </div>
     </section>
 
-    <!-- Contact Section -->
     <section id="contact" class="py-24">
         <div class="container mx-auto px-6 max-w-2xl">
             <h2 class="text-4xl font-bold text-center mb-12">お問い合わせ</h2>
@@ -240,7 +211,7 @@
             </form>
         </div>
     </section>
-
+    
     <section id="company" class="bg-slate-100 py-24">
         <div class="container mx-auto px-6 max-w-3xl">
             <h2 class="text-4xl font-bold text-center mb-12">事業概要</h2>
@@ -259,6 +230,8 @@
     </section>
 </main>
 
+<!-- templates/index.html -->
+
 <footer class="bg-gray-800 text-white py-12">
     <div class="container mx-auto px-6 text-center">
         <a href="#" class="text-3xl font-bold text-gradient">LARUbot</a>
@@ -266,14 +239,16 @@
         <div class="flex justify-center space-x-6 mb-8">
              <a href="#reasons" class="text-slate-300 hover:text-white">選ばれる理由</a>
              <a href="#plans" class="text-slate-300 hover:text-white">料金プラン</a>
-             <a href="#features" class="text-slate-300 hover:text-white">機能</a>
+             <!-- ▼▼▼ 以下の2行を追加 ▼▼▼ -->
+             <a href="{{ url_for('terms_of_service') }}" class="text-slate-300 hover:text-white">利用規約</a>
+             <a href="{{ url_for('privacy_policy') }}" class="text-slate-300 hover:text-white">プライバシーポリシー</a>
+             <!-- ▲▲▲ ここまで追加 ▲▲▲ -->
              <a href="#contact" class="text-slate-300 hover:text-white">お問い合わせ</a>
         </div>
         <p class="text-slate-500">&copy; 2025 LARUbot. All Rights Reserved.</p>
     </div>
 </footer>
 
-<!-- フローティングAIチャットウィジェット -->
 <div class="chat-container">
     <div id="chat-iframe-wrapper" class="chat-iframe-container hidden">
         <iframe src="https://chatbot-with-example2.onrender.com" class="w-full h-full border-0" title="LARUbot AI Chatbot"></iframe>

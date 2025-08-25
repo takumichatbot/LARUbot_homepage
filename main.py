@@ -7,7 +7,7 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from email_validator import validate_email, EmailNotValidError
 import google.generativeai as genai
 from flask_mail import Mail, Message
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 
 from models import db, User, CustomerData, QA, ConversationLog
@@ -109,13 +109,18 @@ def create_app(config_class=DevelopmentConfig):
             if password != password2:
                 flash('パスワードが一致しません。', 'danger')
                 return redirect(url_for('register'))
+            
             new_user = User(email=email)
             new_user.set_password(password)
             db.session.add(new_user)
             db.session.commit()
+
             new_customer_data = CustomerData(user_id=new_user.id)
+            new_customer_data.trial_ends_at = datetime.now(timezone.utc) + timedelta(days=10)
+            
             db.session.add(new_customer_data)
             db.session.commit()
+            
             _regenerate_knowledge_file(new_customer_data)
             flash('アカウント登録が完了しました。ログインしてください。', 'success')
             return redirect(url_for('login'))
@@ -156,10 +161,11 @@ def create_app(config_class=DevelopmentConfig):
     @app.route('/qa/add', methods=['POST'])
     @login_required
     def add_qa():
-        customer_plan = current_user.customer_data.plan
-        if customer_plan == 'starter' and current_user.customer_data.qas.count() >= 100:
-            flash('Q&Aの登録上限数（100件）に達しました。無制限に登録するには、プロフェッショナルプランへのアップグレードをご検討ください。', 'warning')
-            return redirect(url_for('qa_management'))
+        customer_data = current_user.customer_data
+        if customer_data.plan == 'starter' and not customer_data.is_on_trial():
+            if customer_data.qas.count() >= 100:
+                flash('Q&Aの登録上限数（100件）に達しました。無制限に登録するには、プロフェッショナルプランへのアップグレードをご検討ください。', 'warning')
+                return redirect(url_for('qa_management'))
         question = request.form.get('question', '').strip()
         answer = request.form.get('answer', '').strip()
         if question and answer:
@@ -188,18 +194,28 @@ def create_app(config_class=DevelopmentConfig):
     @app.route('/logs')
     @login_required
     def conversation_logs():
-        customer_plan = current_user.customer_data.plan
-        if customer_plan == 'starter':
+        customer_data = current_user.customer_data
+        if customer_data.plan == 'starter' and not customer_data.is_on_trial():
             seven_days_ago = datetime.utcnow() - timedelta(days=7)
-            logs = current_user.customer_data.logs.filter(ConversationLog.timestamp >= seven_days_ago).order_by(ConversationLog.timestamp.desc()).all()
+            logs = customer_data.logs.filter(ConversationLog.timestamp >= seven_days_ago).order_by(ConversationLog.timestamp.desc()).all()
         else:
-            logs = current_user.customer_data.logs.order_by(ConversationLog.timestamp.desc()).all()
+            logs = customer_data.logs.order_by(ConversationLog.timestamp.desc()).all()
         return render_template('conversation_logs.html', logs=logs, user=current_user)
 
     # --- 公開ページとAPIのルート ---
     @app.route('/')
     def index():
         return render_template('index.html')
+        
+    # ▼▼▼【修正点】利用規約とプライバシーポリシーのルートを追加 ▼▼▼
+    @app.route('/terms')
+    def terms_of_service():
+        return render_template('terms.html')
+
+    @app.route('/privacy')
+    def privacy_policy():
+        return render_template('privacy.html')
+    # ▲▲▲ ここまで追加 ▲▲▲
 
     @app.route('/contact', methods=['POST'])
     def contact():
@@ -290,7 +306,7 @@ def create_app(config_class=DevelopmentConfig):
     def chatbot_page(user_id):
         customer_data = CustomerData.query.filter_by(user_id=user_id).first_or_404()
         example_questions = []
-        if customer_data.plan == 'professional':
+        if customer_data.plan == 'professional' or customer_data.is_on_trial():
             knowledge_file = os.path.join('static/knowledge', f"knowledge_{customer_data.user_id}.json")
             if os.path.exists(knowledge_file):
                 try:
@@ -361,7 +377,6 @@ def create_app(config_class=DevelopmentConfig):
     return app
 
 # --- アプリケーションの実行 ---
-# ▼▼▼【修正点】コマンド登録をifブロックの外に移動 ▼▼▼
 app = create_app()
 
 @app.cli.command("reset-db")
