@@ -39,7 +39,8 @@
             <h3 class="font-bold text-lg text-slate-800">Q&Aチューニング</h3>
             <p class="text-slate-600">Q&Aを編集してボットを賢く育てます。</p>
         </a>
-        {% if data.plan == 'professional' %}
+        
+        {% if data.plan == 'professional' or current_user.is_admin %}
         <a href="{{ url_for('manage_example_questions') }}" class="block p-6 bg-white rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all">
             <i class="fas fa-question-circle text-2xl text-sky-500 mb-3"></i>
             <h3 class="font-bold text-lg text-slate-800">質問例カスタマイズ</h3>
@@ -52,7 +53,6 @@
             <p class="text-slate-500">プロフェッショナルプランで利用可能です。</p>
         </div>
         {% endif %}
-
         <a href="{{ url_for('conversation_logs') }}" class="block p-6 bg-white rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all">
             <i class="fas fa-history text-2xl text-purple-500 mb-3"></i>
             <h3 class="font-bold text-lg text-slate-800">会話ログ</h3>

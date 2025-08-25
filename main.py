@@ -78,17 +78,21 @@ def create_app(config_class=DevelopmentConfig):
                 return redirect(url_for('dashboard'))
             return f(*args, **kwargs)
         return decorated_function
-        
+    
+    # ▼▼▼ professional_plan_required デコレータを修正します ▼▼▼
     def professional_plan_required(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            if not current_user.is_authenticated or current_user.customer_data.plan != 'professional':
+            # professionalプランのユーザー、または管理者(is_admin)であればアクセスを許可
+            if not current_user.is_authenticated:
+                return redirect(url_for('login'))
+            if not (current_user.customer_data.plan == 'professional' or current_user.is_admin):
                 flash('この機能はプロフェッショナルプランでのみ利用可能です。', 'warning')
                 return redirect(url_for('dashboard'))
             return f(*args, **kwargs)
         return decorated_function
+    # ▲▲▲ ここまで修正 ▲▲▲
 
-    # === send_reset_email 関数の sender を修正します ===
     def send_reset_email(user):
         token = user.get_reset_token()
         msg = Message('パスワード再設定リクエスト', sender=current_app.config['MAIL_USERNAME'], recipients=[user.email])
@@ -98,9 +102,7 @@ def create_app(config_class=DevelopmentConfig):
 もしこのリクエストに心当たりがない場合は、このメールを無視してください。
 '''
         mail.send(msg)
-    # === 修正終わり ===
 
-    # === send_confirmation_email 関数の sender を修正します ===
     def send_confirmation_email(user):
         token = user.get_reset_token(expires_sec=86400)
         msg = Message('アカウントの有効化', sender=current_app.config['MAIL_USERNAME'], recipients=[user.email])
@@ -108,9 +110,7 @@ def create_app(config_class=DevelopmentConfig):
 {url_for('confirm_email', token=token, _external=True)}
 '''
         mail.send(msg)
-    # === 修正終わり ===
     
-    # === login() 関数のインデントとflashメッセージを修正します ===
     @app.route('/login', methods=['GET', 'POST'])
     def login():
         if current_user.is_authenticated: return redirect(url_for('dashboard'))
@@ -127,9 +127,7 @@ def create_app(config_class=DevelopmentConfig):
             else:
                 flash('メールアドレスまたはパスワードが正しくありません。', 'danger')
         return render_template('login.html')
-    # === 修正終わり ===
 
-    # === resend_confirmation() 関数を新たに追加します ===
     @app.route('/resend_confirmation', methods=['GET', 'POST'])
     def resend_confirmation():
         if current_user.is_authenticated:
@@ -148,7 +146,6 @@ def create_app(config_class=DevelopmentConfig):
             else:
                 flash('入力されたメールアドレスは登録されていません。', 'danger')
         return render_template('resend_confirmation.html')
-    # === 修正終わり ===
 
     @app.route('/register', methods=['GET', 'POST'])
     def register():
@@ -251,7 +248,6 @@ def create_app(config_class=DevelopmentConfig):
     def dashboard():
         customer_data = current_user.customer_data
         
-        # === ダッシュボードで表示するフラッシュメッセージをここに一元化します ===
         if customer_data.plan == 'trial' and customer_data.is_on_trial():
             remaining_days = (customer_data.trial_ends_at - datetime.utcnow()).days
             if remaining_days < 0: remaining_days = 0
@@ -261,7 +257,6 @@ def create_app(config_class=DevelopmentConfig):
             flash('無料トライアルは終了しました。引き続きサービスをご利用いただくには、有料プランへのアップグレードが必要です。', 'warning')
 
         return render_template('dashboard.html', user=current_user, data=customer_data)
-    # === 修正終わり ===
 
     @app.route('/settings', methods=['GET', 'POST'])
     @login_required
@@ -288,7 +283,8 @@ def create_app(config_class=DevelopmentConfig):
     @login_required
     def add_qa():
         customer_data = current_user.customer_data
-        if customer_data.plan != 'professional':
+        # Q&Aの登録上限チェックは、管理者(is_admin)の場合は免除する
+        if not current_user.is_admin and customer_data.plan != 'professional':
             if customer_data.qas.count() >= 100:
                 flash('無料プラン・トライアル中のQ&A登録上限数（100件）に達しました。', 'warning')
                 return redirect(url_for('qa_management'))
@@ -321,7 +317,8 @@ def create_app(config_class=DevelopmentConfig):
     @login_required
     def conversation_logs():
         customer_data = current_user.customer_data
-        if customer_data.plan != 'professional':
+        # ログの閲覧期間制限は、管理者(is_admin)の場合は免除する
+        if not current_user.is_admin and customer_data.plan != 'professional':
             seven_days_ago = datetime.utcnow() - timedelta(days=7)
             logs = customer_data.logs.filter(ConversationLog.timestamp >= seven_days_ago).order_by(ConversationLog.timestamp.desc()).all()
         else:
@@ -442,17 +439,12 @@ def create_app(config_class=DevelopmentConfig):
     def chatbot_page(user_id):
         customer_data = CustomerData.query.filter_by(user_id=user_id).first_or_404()
         example_questions = []
-        # プロフェッショナルプランの場合のみ、質問例を取得
         if customer_data.plan == 'professional':
             example_questions = customer_data.example_questions.order_by(ExampleQuestion.id.asc()).all()
         return render_template('chatbot_page.html', data=customer_data, example_questions=example_questions)
 
-    # --- ▼▼▼ ここからAI関連の関数を更新 ▼▼▼ ---
     def get_gemini_response(customer_data, user_message, session_id):
-        # 1. ペルソナ（役割）設定
         bot_name = customer_data.bot_name or "アシスタント"
-        
-        # システムプロンプトにクイックリプライ生成の指示を追加
         system_prompt = f"""あなたは「{bot_name}」という名前の優秀なアシスタントです。
 以下の制約条件とナレッジを厳密に守って、ユーザーの質問に回答してください。
 
@@ -466,8 +458,6 @@ def create_app(config_class=DevelopmentConfig):
 
 # ナレッジ
 """
-
-        # 2. ナレッジ（Q&Aデータ）の読み込みと活用
         knowledge_text = "（ナレッジはありません）"
         knowledge_filepath = os.path.join('static/knowledge', f"knowledge_{customer_data.user_id}.json")
         if os.path.exists(knowledge_filepath):
@@ -478,23 +468,17 @@ def create_app(config_class=DevelopmentConfig):
                         knowledge_text = "\n".join([f"- Q: {q}\n  A: {a}" for q, a in knowledge_data.items()])
             except (IOError, json.JSONDecodeError) as e:
                 print(f"ナレッジファイルの読み込みエラー: {e}")
-
-        # 3. 会話履歴の取得と整形
         history = []
         try:
-            # 直近5往復の会話を取得
             recent_logs = ConversationLog.query.filter_by(customer_data_id=customer_data.id, session_id=session_id)\
                                                .order_by(ConversationLog.timestamp.desc()).limit(5).all()
-            recent_logs.reverse() # 時系列を昇順に戻す
-            
+            recent_logs.reverse()
             for log in recent_logs:
                 history.append({'role': 'user', 'parts': [log.user_question]})
                 if log.bot_answer:
                     history.append({'role': 'model', 'parts': [log.bot_answer]})
         except Exception as e:
             print(f"会話履歴の取得エラー: {e}")
-
-        # 4. Gemini API呼び出し
         try:
             model = genai.GenerativeModel('gemini-1.5-flash')
             full_prompt = system_prompt + knowledge_text
@@ -505,31 +489,19 @@ def create_app(config_class=DevelopmentConfig):
             ] + history)
 
             response = chat_session.send_message(user_message)
-            
-            # クイックリプライの解析は後続の関数で行うため、ここでは元のテキストをそのまま返す
             return response.text
-
         except Exception as e:
             print(f"Gemini API Error: {e}")
             return "申し訳ありません、AIとの通信中にエラーが発生しました。"
 
     def parse_response_for_quick_reply(text: str) -> (str, list):
-        """
-        AIの応答から [...] 形式の選択肢を抜き出す関数
-        Args:
-            text (str): AIからの応答文字列
-        Returns:
-            tuple: (本文, 選択肢リスト) のタプル。選択肢がなければリストは空。
-        """
         match = re.search(r"\[(.*?)\]\s*$", text)
         if match:
-            # [...]が見つかった場合
             main_text = text[:match.start()].strip()
             options_str = match.group(1)
             options = [opt.strip() for opt in options_str.split(',')]
             return main_text, options
         else:
-            # [...]が見つからなかった場合
             return text, []
 
     @app.route('/ask/<int:user_id>', methods=['POST'])
@@ -556,11 +528,8 @@ def create_app(config_class=DevelopmentConfig):
             db.session.rollback()
             print(f"ログ保存エラー: {e}")
 
-        # Webチャットではクイックリプライを実装しないため、そのまま返す
         return jsonify({"answer": answer})
     
-    # --- ▲▲▲ ここまでAI関連の関数を更新 ▲▲▲ ---
-
     @app.route("/line-webhook", methods=['POST'])
     def line_webhook():
         signature = request.headers['X-Line-Signature']
@@ -578,7 +547,6 @@ def create_app(config_class=DevelopmentConfig):
                 continue
         abort(400)
 
-    # --- ▼▼▼ LINE関連の関数を更新 ▼▼▼ ---
     def handle_message(event, customer_data):
         user_message = event.message.text
         line_bot_api = LineBotApi(customer_data.line_channel_token)
@@ -589,7 +557,6 @@ def create_app(config_class=DevelopmentConfig):
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
             return
         
-        # Geminiから応答を取得
         answer_from_ai = get_gemini_response(customer_data, user_message, session_id)
         
         try:
@@ -605,20 +572,17 @@ def create_app(config_class=DevelopmentConfig):
             db.session.rollback()
             print(f"ログ保存エラー: {e}")
         
-        # === ここからクイックリプライのロジックを実装 ===
         message = None
         if customer_data.plan == 'professional':
             main_text, options = parse_response_for_quick_reply(answer_from_ai)
             
             if options:
-                # 1. AIが動的な選択肢 [...] を生成した場合
                 buttons = [QuickReplyButton(action=MessageAction(label=opt, text=opt)) for opt in options]
                 message = TextSendMessage(
                     text=main_text,
                     quick_reply=QuickReply(items=buttons)
                 )
             else:
-                # 2. AIが選択肢を生成しなかった場合、固定の質問例ボタンを表示
                 example_questions = customer_data.example_questions.order_by(ExampleQuestion.id.asc()).all()
                 if example_questions:
                     buttons = [QuickReplyButton(action=MessageAction(label=eq.text, text=eq.text)) for eq in example_questions]
@@ -627,13 +591,10 @@ def create_app(config_class=DevelopmentConfig):
                         quick_reply=QuickReply(items=buttons)
                     )
         
-        # どの条件にも当てはまらない（例：starter/freeプラン）場合は、通常のテキストメッセージ
         if not message:
             message = TextSendMessage(text=answer_from_ai)
 
         line_bot_api.reply_message(event.reply_token, message)
-
-    # --- ▲▲▲ LINE関連の関数を更新 ▲▲▲ ---
 
     @app.route('/admin')
     @login_required
