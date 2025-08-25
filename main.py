@@ -108,42 +108,39 @@ def create_app(config_class=DevelopmentConfig):
     
     @app.route('/login', methods=['GET', 'POST'])
     def login():
-    if current_user.is_authenticated: return redirect(url_for('dashboard'))
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        user = User.query.filter_by(email=email).first()
-        if user and user.check_password(password):
-            if not user.confirmed:
-                # ↓↓↓ このflashメッセージを修正します ↓↓↓
-                flash('アカウントが有効化されていません。 <a href="/resend_confirmation">確認メールを再送しますか？</a>', 'warning')
-                # ↑↑↑ ここまで修正 ↑↑↑
-                return redirect(url_for('login'))
-            login_user(user)
-            return redirect(url_for('dashboard'))
-        else:
-            flash('メールアドレスまたはパスワードが正しくありません。', 'danger')
-    return render_template('login.html')
-
+        if current_user.is_authenticated: return redirect(url_for('dashboard'))
+        if request.method == 'POST':
+            email = request.form.get('email')
+            password = request.form.get('password')
+            user = User.query.filter_by(email=email).first()
+            if user and user.check_password(password):
+                if not user.confirmed:
+                    flash('アカウントが有効化されていません。 <a href="/resend_confirmation">確認メールを再送しますか？</a>', 'warning')
+                    return redirect(url_for('login'))
+                login_user(user)
+                return redirect(url_for('dashboard'))
+            else:
+                flash('メールアドレスまたはパスワードが正しくありません。', 'danger')
+        return render_template('login.html')
 
     @app.route('/resend_confirmation', methods=['GET', 'POST'])
     def resend_confirmation():
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
-    if request.method == 'POST':
-        email = request.form.get('email')
-        user = User.query.filter_by(email=email).first()
-        if user:
-            if user.confirmed:
-                flash('このアカウントは既に有効化されています。', 'info')
-                return redirect(url_for('login'))
+        if current_user.is_authenticated:
+            return redirect(url_for('dashboard'))
+        if request.method == 'POST':
+            email = request.form.get('email')
+            user = User.query.filter_by(email=email).first()
+            if user:
+                if user.confirmed:
+                    flash('このアカウントは既に有効化されています。', 'info')
+                    return redirect(url_for('login'))
+                else:
+                    send_confirmation_email(user)
+                    flash('新しい確認メールを送信しました。メールボックスをご確認ください。', 'success')
+                    return redirect(url_for('login'))
             else:
-                send_confirmation_email(user)
-                flash('新しい確認メールを送信しました。メールボックスをご確認ください。', 'success')
-                return redirect(url_for('login'))
-        else:
-            flash('入力されたメールアドレスは登録されていません。', 'danger')
-    return render_template('resend_confirmation.html')
+                flash('入力されたメールアドレスは登録されていません。', 'danger')
+        return render_template('resend_confirmation.html')
 
     @app.route('/register', methods=['GET', 'POST'])
     def register():
