@@ -505,5 +505,22 @@ def init_db_command():
         db.create_all()
         print("データベースを初期化しました。")
 
+        # main.py の一番下のあたり
+
+
+@app.cli.command("make-admin")
+def make_admin_command():
+    """Creates a new admin user or promotes an existing user."""
+    email = input("管理者に設定したいユーザーのメールアドレスを入力してください: ")
+    user = User.query.filter_by(email=email).first()
+
+    if not user:
+        print(f"エラー: ユーザー '{email}' が見つかりません。")
+        return
+
+    user.is_admin = True
+    db.session.commit()
+    print(f"成功: ユーザー '{email}' が管理者に設定されました。")
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5005, debug=True)
