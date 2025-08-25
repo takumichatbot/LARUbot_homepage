@@ -2,27 +2,31 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <!-- Google Analytics Code -->
+    <!-- ▼▼▼ Google Analyticsのコードをここに設定 ▼▼▼ -->
+    <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-6BF1QV6ZF7"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
+
       gtag('config', 'G-6BF1QV6ZF7');
     </script>
+    <!-- ▲▲▲ ここまで ▲▲▲ -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}LARUbot 管理画面{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .sidebar-link:hover, .sidebar-link.active {
-            background-color: #e0f2fe;
-            color: #0369a1;
+            background-color: #e0f2fe; /* sky-100 */
+            color: #0369a1; /* sky-700 */
         }
     </style>
 </head>
 <body class="bg-slate-100">
     <div class="relative min-h-screen md:flex">
+
         <!-- モバイル用のヘッダー -->
         <header class="bg-white shadow-md md:hidden flex justify-between items-center p-4">
             <a href="{{ url_for('index') }}" class="text-2xl font-bold text-sky-500">LARUbot</a>
@@ -33,6 +37,7 @@
 
         <!-- サイドバー -->
         <aside id="sidebar" class="bg-white shadow-lg w-64 flex-col fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out z-30">
+            <!-- ロゴ（PC表示時） -->
             <div class="p-6 text-2xl font-bold text-sky-500 border-b hidden md:block">
                 <a href="{{ url_for('index') }}" title="ホームページに戻る">LARUbot</a>
             </div>
@@ -67,6 +72,7 @@
 
         <!-- メインコンテンツエリア -->
         <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- PC用のヘッダー -->
             <header class="bg-white shadow-sm p-4 justify-between items-center hidden md:flex">
                 <div class="flex items-center">
                     {% block page_header %}{% endblock %}
@@ -76,27 +82,9 @@
                 </div>
             </header>
             <main class="flex-1 overflow-x-hidden overflow-y-auto bg-slate-100 p-4 sm:p-8">
-                <!-- ▼▼▼ トライアル状況を表示するバナー ▼▼▼ -->
-                {% if current_user.customer_data and current_user.customer_data.is_on_trial() %}
-                <div class="bg-amber-100 border-l-4 border-amber-500 text-amber-700 p-4 mb-6 rounded-r-lg shadow" role="alert">
-                    <div class="flex">
-                        <div class="py-1"><i class="fas fa-info-circle mr-3"></i></div>
-                        <div>
-                            <!-- ▼▼▼【修正点】文言を「スタータープラン」に変更 ▼▼▼ -->
-                            <p class="font-bold">スタータープランの無料トライアル中です！</p>
-                            <p class="text-sm">
-                                トライアルはあと <strong>{{ current_user.customer_data.trial_days_remaining() }}</strong> 日で終了します。
-                                <a href="{{ url_for('index') }}#plans" target="_blank" class="font-bold underline hover:text-amber-800">有料プランにアップグレード</a>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-                
-                {% with messages = get_flashed_messages(with_categories=true) %}
                   {% if messages %}
                     {% for category, message in messages %}
-                    <div class="mb-6 px-4 py-3 rounded-lg relative {{ 'bg-green-100 border-green-400 text-green-700' if category == 'success' else ('bg-amber-100 border-amber-400 text-amber-700' if category == 'warning' else 'bg-red-100 border-red-400 text-red-700') }}" role="alert">
+                    <div class="mb-6 px-4 py-3 rounded-lg relative {{ 'bg-green-100 border-green-400 text-green-700' if category == 'success' else 'bg-red-100 border-red-400 text-red-700' }}" role="alert">
                       <span class="block sm:inline">{{ message }}</span>
                     </div>
                     {% endfor %}
@@ -108,6 +96,7 @@
         </div>
     </div>
 
+    <!-- サイドバー開閉のためのJavaScript -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const sidebar = document.getElementById('sidebar');
