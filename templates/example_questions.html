@@ -1,0 +1,44 @@
+{% extends "layout.html" %}
+
+{% block title %}質問例のカスタマイズ - {{ super() }}{% endblock %}
+
+{% block page_header %}
+    <a href="{{ url_for('dashboard') }}" class="text-slate-500 hover:text-sky-600 mr-4" title="ダッシュボードに戻る">
+        <i class="fas fa-arrow-left"></i>
+    </a>
+    <h1 class="text-xl font-semibold text-slate-800">質問例のカスタマイズ</h1>
+{% endblock %}
+
+{% block content %}
+<div class="bg-white p-8 rounded-xl shadow-md">
+    <p class="text-slate-600 mb-6">チャットボットに表示される質問の例を編集します。エンドユーザーが会話を始めるきっかけになります。</p>
+
+    <form method="POST" action="{{ url_for('add_example_question') }}" class="mb-8 border-b pb-8">
+        <div class="mb-4">
+            <label for="text" class="block text-slate-700 text-sm font-bold mb-2">新しい質問例:</label>
+            <input type="text" name="text" id="text" class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500" required>
+        </div>
+        <div class="text-right">
+            <button type="submit" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                追加する
+            </button>
+        </div>
+    </form>
+
+    <h3 class="text-lg font-bold mb-4 text-slate-800">登録済みリスト</h3>
+    <div class="space-y-3">
+        {% for eq in example_questions %}
+        <div class="flex items-center justify-between bg-slate-50 p-3 rounded-lg">
+            <p class="text-slate-800">{{ eq.text }}</p>
+            <form method="POST" action="{{ url_for('delete_example_question', eq_id=eq.id) }}" onsubmit="return confirm('本当に削除しますか？');">
+                <button type="submit" class="text-red-500 hover:text-red-700 text-sm font-semibold">
+                    <i class="fas fa-trash-alt"></i> 削除
+                </button>
+            </form>
+        </div>
+        {% else %}
+        <p class="text-slate-500 text-center py-4">まだ質問例は登録されていません。</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

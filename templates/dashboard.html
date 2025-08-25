@@ -1,12 +1,23 @@
 {% extends "layout.html" %}
 
 {% block title %}ダッシュボード - {{ super() }}{% endblock %}
-{% block header_title %}ダッシュボード{% endblock %}
+
+{% block page_header %}
+    <h1 class="text-xl font-semibold text-slate-800">ダッシュボード</h1>
+{% endblock %}
 
 {% block content %}
 <div class="space-y-8">
+    
+    {% if data.plan == 'trial' and data.is_on_trial() %}
+    <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-lg shadow" role="alert">
+        <p class="font-bold">スタータープランの無料トライアル中です！</p>
+        <p>トライアルはあと <span class="font-bold">{{ data.trial_days_remaining() }}日</span> で終了します。 <a href="{{ url_for('index') }}#pricing" class="font-bold underline hover:text-yellow-800">有料プランにアップグレード</a></p>
+    </div>
+    {% endif %}
+
     <div class="bg-gradient-to-r from-sky-500 to-indigo-500 text-white p-8 rounded-xl shadow-lg">
-        <h2 class="text-3xl font-bold mb-2">ようこそ、LARUbotへ！</h2>
+        <h2 class="text-3xl font-bold mb-2">ようこそ、{{ current_user.email }}さん</h2>
         <p class="mb-6">チャットボットを完成させるための、最初のステップをご紹介します。</p>
         <div class="flex space-x-4">
             <a href="{{ url_for('settings') }}" class="bg-white/30 hover:bg-white/40 text-white font-bold py-2 px-4 rounded-lg transition">1. 見た目をカスタマイズ</a>
@@ -15,26 +26,40 @@
     </div>
 
     <div class="bg-white p-6 rounded-xl shadow-md">
-        <h3 class="font-bold text-lg mb-4">あなたのチャットボット</h3>
+        <h3 class="font-bold text-lg mb-4 text-slate-800">あなたのチャットボット</h3>
         <p class="mb-2 text-slate-600">以下のURLをサイトに埋め込むか、直接アクセスしてチャットボットをテストできます。</p>
         <div class="flex items-center space-x-2 bg-slate-100 p-3 rounded-lg">
             <i class="fas fa-link text-slate-500"></i>
-            <input id="chatbot-url" type="text" value="{{ request.host_url }}chatbot/{{ user.id }}" readonly class="flex-grow bg-transparent outline-none text-sky-700">
+            <input id="chatbot-url" type="text" value="{{ url_for('chatbot_page', user_id=user.id, _external=True) }}" readonly class="flex-grow bg-transparent outline-none text-sky-700">
             <button onclick="copyUrl()" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-1 px-3 text-sm rounded-md transition">コピー</button>
         </div>
     </div>
     
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <a href="{{ url_for('settings') }}" class="block p-6 bg-white rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all">
             <i class="fas fa-palette text-2xl text-green-500 mb-3"></i>
-            <h3 class="font-bold text-lg text-slate-800">カスタマイズ</h3>
+            <h3 class="font-bold text-lg text-slate-800">基本設定</h3>
             <p class="text-slate-600">ボットの名前、色、挨拶メッセージを変更します。</p>
         </a>
         <a href="{{ url_for('qa_management') }}" class="block p-6 bg-white rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all">
             <i class="fas fa-brain text-2xl text-indigo-500 mb-3"></i>
-            <h3 class="font-bold text-lg text-slate-800">チューニング</h3>
+            <h3 class="font-bold text-lg text-slate-800">Q&Aチューニング</h3>
             <p class="text-slate-600">Q&Aを編集してボットを賢く育てます。</p>
         </a>
+        {% if data.plan == 'professional' %}
+        <a href="{{ url_for('manage_example_questions') }}" class="block p-6 bg-white rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all">
+            <i class="fas fa-question-circle text-2xl text-sky-500 mb-3"></i>
+            <h3 class="font-bold text-lg text-slate-800">質問例カスタマイズ</h3>
+            <p class="text-slate-600">チャット開始時の質問例を編集します。</p>
+        </a>
+        {% else %}
+        <div class="block p-6 bg-slate-50 rounded-xl border border-dashed">
+            <i class="fas fa-question-circle text-2xl text-slate-400 mb-3"></i>
+            <h3 class="font-bold text-lg text-slate-500">質問例カスタマイズ</h3>
+            <p class="text-slate-500">プロフェッショナルプランで利用可能です。</p>
+        </div>
+        {% endif %}
+
         <a href="{{ url_for('conversation_logs') }}" class="block p-6 bg-white rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all">
             <i class="fas fa-history text-2xl text-purple-500 mb-3"></i>
             <h3 class="font-bold text-lg text-slate-800">会話ログ</h3>
@@ -52,4 +77,3 @@
     }
 </script>
 {% endblock %}
-

@@ -10,7 +10,6 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(200), nullable=False)
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
-    
     customer_data = db.relationship('CustomerData', backref='user', uselist=False, cascade="all, delete-orphan")
 
     def set_password(self, password):
@@ -27,28 +26,24 @@ class CustomerData(db.Model):
     header_color = db.Column(db.String(7), default='#0ea5e9')
     plan = db.Column(db.String(50), default='trial') 
     stripe_customer_id = db.Column(db.String(255), nullable=True)
-    
     trial_ends_at = db.Column(db.DateTime, nullable=True)
-
-    # ▼▼▼【ここを修正】顧客ごとのLINE認証情報を保存するカラムを追加 ▼▼▼
     line_channel_token = db.Column(db.String(255), nullable=True)
     line_channel_secret = db.Column(db.String(255), nullable=True)
-    # ▲▲▲【ここまで】▲▲▲
 
     qas = db.relationship('QA', backref='customer_data', lazy='dynamic', cascade="all, delete-orphan")
     logs = db.relationship('ConversationLog', backref='customer_data', lazy='dynamic', cascade="all, delete-orphan")
+    # ▼▼▼ 新しいリレーションシップを追加 ▼▼▼
+    example_questions = db.relationship('ExampleQuestion', backref='customer_data', lazy='dynamic', cascade="all, delete-orphan")
 
     def is_on_trial(self):
-        """トライアル期間中かどうかを判定する"""
         return self.trial_ends_at and self.trial_ends_at > datetime.utcnow()
 
     def trial_days_remaining(self):
-        """トライアルの残り日数を計算する"""
         if not self.is_on_trial():
             return 0
         delta = self.trial_ends_at - datetime.utcnow()
         return delta.days + 1
-        
+
 class QA(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     question = db.Column(db.String(500), nullable=False)
@@ -62,18 +57,21 @@ class ConversationLog(db.Model):
     timestamp = db.Column(db.DateTime, server_default=db.func.now())
     customer_data_id = db.Column(db.Integer, db.ForeignKey('customer_data.id'), nullable=False)
 
-# 注：LineUserモデルは、新しいアーキテクチャでは使用されなくなりました。
-# データベースから削除するにはマイグレーションが必要ですが、ひとまず残しておいても問題ありません。
+# ▼▼▼ 新しいモデルを追加 ▼▼▼
+class ExampleQuestion(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    text = db.Column(db.String(255), nullable=False)
+    customer_data_id = db.Column(db.Integer, db.ForeignKey('customer_data.id'), nullable=False)
+
+    def __repr__(self):
+        return f'<ExampleQuestion {self.text}>'
+
+# 注：以下のLineUserモデルは、現在のアーキテクチャでは使用されません。
 class LineUser(db.Model):
     __tablename__ = 'line_user'
     id = db.Column(db.Integer, primary_key=True)
-    # LINEから提供される一意のユーザーID
     line_user_id = db.Column(db.String(255), unique=True, nullable=False, index=True)
-    # サービス内のUserモデルとの紐付け
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-
-    # Userモデルとのリレーションシップを定義
-    # これにより `line_user.user` のようにしてUserオブジェクトにアクセスできる
     user = db.relationship('User', backref=db.backref('line_user', uselist=False))
 
     def __repr__(self):

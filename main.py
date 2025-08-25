@@ -1,6 +1,5 @@
 import os
 import json
-import re
 import stripe
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, abort
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
@@ -10,13 +9,12 @@ from flask_mail import Mail, Message
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from flask_migrate import Migrate
-
-# ▼▼▼ LINE SDK Imports ▼▼▼
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
-from linebot.models import MessageEvent, TextMessage, TextSendMessage, FollowEvent
+from linebot.models import MessageEvent, TextMessage, TextSendMessage
 
-from models import db, User, CustomerData, QA, ConversationLog, LineUser
+# ExampleQuestionをインポートに追加
+from models import db, User, CustomerData, QA, ConversationLog, ExampleQuestion
 from config import DevelopmentConfig
 
 def create_app(config_class=DevelopmentConfig):
@@ -34,7 +32,6 @@ def create_app(config_class=DevelopmentConfig):
 
     stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 
-    # --- Mail Configuration ---
     app.config['MAIL_SERVER'] = 'smtp.gmail.com'
     app.config['MAIL_PORT'] = 587
     app.config['MAIL_USE_TLS'] = True
@@ -43,19 +40,6 @@ def create_app(config_class=DevelopmentConfig):
     app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_USERNAME')
     mail = Mail(app)
 
-    # ▼▼▼ LINE API Configuration ▼▼▼
-    LINE_CHANNEL_ACCESS_TOKEN = os.getenv('LINE_CHANNEL_ACCESS_TOKEN')
-    LINE_CHANNEL_SECRET = os.getenv('LINE_CHANNEL_SECRET')
-
-    if not LINE_CHANNEL_ACCESS_TOKEN or not LINE_CHANNEL_SECRET:
-        print("警告: .envファイルにLINEの認証情報が見つかりません。LINE Bot機能は無効になります。")
-        line_bot_api = None
-        handler = None
-    else:
-        line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
-        handler = WebhookHandler(LINE_CHANNEL_SECRET)
-
-    # --- Google Gemini API Configuration ---
     GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
     if GOOGLE_API_KEY:
         genai.configure(api_key=GOOGLE_API_KEY)
@@ -68,10 +52,8 @@ def create_app(config_class=DevelopmentConfig):
 
     def _regenerate_knowledge_file(customer_data):
         all_qas = customer_data.qas.all()
-        example_questions = [qa.question for qa in all_qas[:5]]
         knowledge_dict = {
-            "data": {qa.question: qa.answer for qa in all_qas}, # 'all_as' -> 'all_qas' に修正済み
-            "example_questions": example_questions
+            "data": {qa.question: qa.answer for qa in all_qas}
         }
         knowledge_dir = 'static/knowledge'
         os.makedirs(knowledge_dir, exist_ok=True)
@@ -91,12 +73,20 @@ def create_app(config_class=DevelopmentConfig):
                 return redirect(url_for('dashboard'))
             return f(*args, **kwargs)
         return decorated_function
+        
+    # ▼▼▼ 新しいデコレーターを追加 ▼▼▼
+    def professional_plan_required(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated or current_user.customer_data.plan != 'professional':
+                flash('この機能はプロフェッショナルプランでのみ利用可能です。', 'warning')
+                return redirect(url_for('dashboard'))
+            return f(*args, **kwargs)
+        return decorated_function
 
-    # --- Authentication Routes (No Changes) ---
     @app.route('/login', methods=['GET', 'POST'])
     def login():
-        if current_user.is_authenticated:
-            return redirect(url_for('dashboard'))
+        if current_user.is_authenticated: return redirect(url_for('dashboard'))
         if request.method == 'POST':
             email = request.form.get('email')
             password = request.form.get('password')
@@ -110,8 +100,7 @@ def create_app(config_class=DevelopmentConfig):
 
     @app.route('/register', methods=['GET', 'POST'])
     def register():
-        if current_user.is_authenticated:
-            return redirect(url_for('dashboard'))
+        if current_user.is_authenticated: return redirect(url_for('dashboard'))
         if request.method == 'POST':
             email = request.form.get('email')
             password = request.form.get('password')
@@ -130,17 +119,14 @@ def create_app(config_class=DevelopmentConfig):
             if password != password2:
                 flash('パスワードが一致しません。', 'danger')
                 return redirect(url_for('register'))
-            
             new_user = User(email=email)
             new_user.set_password(password)
             db.session.add(new_user)
             db.session.commit()
-
             new_customer_data = CustomerData(user_id=new_user.id)
-            new_customer_data.trial_ends_at = datetime.now(timezone.utc) + timedelta(days=10)
+            new_customer_data.trial_ends_at = datetime.utcnow() + timedelta(days=10)
             db.session.add(new_customer_data)
             db.session.commit()
-            
             _regenerate_knowledge_file(new_customer_data)
             flash('アカウント登録が完了しました。ログインしてください。', 'success')
             return redirect(url_for('login'))
@@ -153,7 +139,6 @@ def create_app(config_class=DevelopmentConfig):
         flash('ログアウトしました。', 'info')
         return redirect(url_for('login'))
 
-    # --- Dashboard Routes (No Changes) ---
     @app.route('/dashboard')
     @login_required
     def dashboard():
@@ -170,6 +155,8 @@ def create_app(config_class=DevelopmentConfig):
             customer_data.bot_name = request.form.get('bot_name', 'My Chatbot').strip()[:100]
             customer_data.welcome_message = request.form.get('welcome_message', 'こんにちは！').strip()[:500]
             customer_data.header_color = request.form.get('header_color', '#0ea5e9')
+            customer_data.line_channel_token = request.form.get('line_channel_token', '').strip()
+            customer_data.line_channel_secret = request.form.get('line_channel_secret', '').strip()
             db.session.commit()
             flash('設定を保存しました！', 'success')
             return redirect(url_for('settings'))
@@ -187,10 +174,8 @@ def create_app(config_class=DevelopmentConfig):
         customer_data = current_user.customer_data
         if customer_data.plan != 'professional':
             if customer_data.qas.count() >= 100:
-                flash_message = 'トライアル中のQ&A登録上限数（100件）に達しました。' if customer_data.is_on_trial() else '無料プランのQ&A登録上限数（100件）に達しました。'
-                flash(flash_message, 'warning')
+                flash('無料プラン・トライアル中のQ&A登録上限数（100件）に達しました。', 'warning')
                 return redirect(url_for('qa_management'))
-        
         question = request.form.get('question', '').strip()
         answer = request.form.get('answer', '').strip()
         if question and answer:
@@ -213,7 +198,7 @@ def create_app(config_class=DevelopmentConfig):
             _regenerate_knowledge_file(current_user.customer_data)
             flash('Q&Aを削除しました。', 'success')
         else:
-            flash('このQ&Aを削除する権限がありません。', 'danger')
+            abort(403)
         return redirect(url_for('qa_management'))
 
     @app.route('/logs')
@@ -227,11 +212,48 @@ def create_app(config_class=DevelopmentConfig):
             logs = customer_data.logs.order_by(ConversationLog.timestamp.desc()).all()
         return render_template('conversation_logs.html', logs=logs, user=current_user)
 
-    # --- Public Pages & Contact (No Changes) ---
+    # ▼▼▼「質問例カスタマイズ」用の新しいルートを追加 ▼▼▼
+    @app.route('/example-questions')
+    @login_required
+    @professional_plan_required
+    def manage_example_questions():
+        questions = current_user.customer_data.example_questions.order_by(ExampleQuestion.id.asc()).all()
+        return render_template('example_questions.html', example_questions=questions, user=current_user)
+
+    @app.route('/example-questions/add', methods=['POST'])
+    @login_required
+    @professional_plan_required
+    def add_example_question():
+        text = request.form.get('text', '').strip()
+        if current_user.customer_data.example_questions.count() >= 10:
+            flash('質問例は最大10個まで登録できます。', 'warning')
+            return redirect(url_for('manage_example_questions'))
+        if text:
+            new_eq = ExampleQuestion(text=text, customer_data=current_user.customer_data)
+            db.session.add(new_eq)
+            db.session.commit()
+            flash('新しい質問例を追加しました。', 'success')
+        return redirect(url_for('manage_example_questions'))
+
+    @app.route('/example-questions/delete/<int:eq_id>', methods=['POST'])
+    @login_required
+    @professional_plan_required
+    def delete_example_question(eq_id):
+        eq_to_delete = ExampleQuestion.query.get_or_404(eq_id)
+        if eq_to_delete.customer_data.user_id == current_user.id:
+            db.session.delete(eq_to_delete)
+            db.session.commit()
+            flash('質問例を削除しました。', 'success')
+        else:
+            abort(403)
+        return redirect(url_for('manage_example_questions'))
+
+    # --- Public & Other Routes ---
     @app.route('/')
     def index():
         return render_template('index.html')
-
+    
+    # ... (Other routes like terms, privacy, contact, stripe unchanged) ...
     @app.route('/terms')
     def terms_of_service():
         return render_template('terms.html')
@@ -264,7 +286,6 @@ def create_app(config_class=DevelopmentConfig):
             print(f"メール送信エラー: {e}")
             return jsonify({'success': False, 'message': 'メッセージの送信中にエラーが発生しました。'})
 
-    # --- Stripe Routes (No Changes) ---
     @app.route('/create-checkout-session', methods=['POST'])
     @login_required
     def create_checkout_session():
@@ -318,48 +339,33 @@ def create_app(config_class=DevelopmentConfig):
                 except Exception as e:
                     print(f"データベース更新中にエラーが発生しました: {e}")
         return 'Success', 200
-        
-    # --- Chatbot API and Public Page ---
+
     @app.route('/chatbot/<int:user_id>')
     def chatbot_page(user_id):
         customer_data = CustomerData.query.filter_by(user_id=user_id).first_or_404()
         example_questions = []
         if customer_data.plan == 'professional':
-            knowledge_file = os.path.join('static/knowledge', f"knowledge_{customer_data.user_id}.json")
-            if os.path.exists(knowledge_file):
-                try:
-                    with open(knowledge_file, 'r', encoding='utf-8') as f:
-                        knowledge = json.load(f)
-                    example_questions = knowledge.get('example_questions', [])
-                except (IOError, json.JSONDecodeError) as e:
-                    print(f"ナレッジファイルの読み込みエラー: {e}")
+            # データベースから直接取得するように変更
+            example_questions = customer_data.example_questions.order_by(ExampleQuestion.id.asc()).all()
         return render_template('chatbot_page.html', data=customer_data, example_questions=example_questions)
 
     def get_gemini_response(customer_data, user_message):
-        """Generates a response using Gemini API based on customer's knowledge base."""
         knowledge_file = os.path.join('static/knowledge', f"knowledge_{customer_data.user_id}.json")
-        if not os.path.exists(knowledge_file):
-            return "設定ファイルが見つかりません。", []
-
+        if not os.path.exists(knowledge_file): return "設定ファイルが見つかりません。", []
         try:
             with open(knowledge_file, 'r', encoding='utf-8') as f:
                 knowledge = json.load(f)
         except (IOError, json.JSONDecodeError) as e:
             print(f"ナレッジファイルの読み込みエラー: {e}")
             return "設定ファイルの読み込み中にエラーが発生しました。", []
-        
         qa_prompt_text = "\n\n".join([f"### {key}\n{value}" for key, value in knowledge.get('data', {}).items()])
         model = genai.GenerativeModel('models/gemini-1.5-flash')
-        
         prompt_data = {
             "system_role": "あなたはLARUbotの優秀なカスタマーサポートAIです。以下のナレッジベースに記載されている情報をすべて注意深く読み、お客様の質問に対する答えを探してください。答えがナレッジベース内に明確に記載されている場合は、その情報のみを使って丁寧に回答してください。複数の項目に関連する可能性がある場合は、それらを統合して答えてください。**もし、いくら探しても答えがナレッジベース内に見つからない場合のみ、「申し訳ありませんが、その情報はこのQ&Aには含まれていません。」と答えてください。**",
-            "follow_up_prompt": "あなたはユーザーの思考を先読みするアシスタントです。上記の会話と、あなたが回答の根拠として使用したナレッジベース全体を考慮して、ユーザーが次に関心を持ちそうな質問を3つ提案してください。**提案する質問は、必ずナレッジベース内の情報から回答できるものにしてください。** 回答は必ずJSON形式の文字列リスト（例: [\"質問1\", \"質問2\", \"質問3\"]）で、リスト以外の文字列は一切含めずに返してください。適切な質問がなければ空のリスト `[]` を返してください。",
             "not_found": "申し訳ありませんが、その情報はこのQ&Aには含まれていません。",
             "error": "申し訳ありませんが、現在AIが応答できません。しばらくしてから再度お試しください。"
         }
-        
         answer = ""
-        follow_up_questions = []
         try:
             full_question = f"{prompt_data['system_role']}\n\n---\n## ナレッジベース\n{qa_prompt_text}\n---\n\nお客様の質問: {user_message}"
             response = model.generate_content(full_question, request_options={'timeout': 30})
@@ -367,19 +373,14 @@ def create_app(config_class=DevelopmentConfig):
         except Exception as e:
             print(f"Gemini APIエラー (回答生成): {e}")
             answer = prompt_data['error']
-        
-        # Follow-up questions are not used for LINE, but logic is kept for web chat
-        return answer, follow_up_questions
-        
+        return answer, []
+
     @app.route('/ask/<int:user_id>', methods=['POST'])
     def ask_chatbot(user_id):
         customer_data = CustomerData.query.filter_by(user_id=user_id).first_or_404()
         user_message = request.json.get('message')
-        if not user_message:
-            return jsonify({'answer': '質問が空です。', "follow_up_questions": []})
-
+        if not user_message: return jsonify({'answer': '質問が空です。', "follow_up_questions": []})
         answer, follow_up_questions = get_gemini_response(customer_data, user_message)
-
         try:
             new_log = ConversationLog(user_question=user_message, bot_answer=answer, customer_data=customer_data)
             db.session.add(new_log)
@@ -387,85 +388,38 @@ def create_app(config_class=DevelopmentConfig):
         except Exception as e:
             print(f"ログ保存エラー: {e}")
             db.session.rollback()
-
         return jsonify({"answer": answer, "follow_up_questions": follow_up_questions})
 
-    # ▼▼▼ NEW: LINE Webhook Route ▼▼▼
+    # --- NEW ADVANCED LINE WEBHOOK ---
     @app.route("/line-webhook", methods=['POST'])
     def line_webhook():
-        if not line_bot_api or not handler:
-            abort(500)
-            
         signature = request.headers['X-Line-Signature']
         body = request.get_data(as_text=True)
         app.logger.info("Request body: " + body)
-        try:
-            handler.handle(body, signature)
-        except InvalidSignatureError:
-            abort(400)
-        return 'OK'
+        all_customers = CustomerData.query.filter(CustomerData.line_channel_secret.isnot(None)).all()
+        for customer in all_customers:
+            handler = WebhookHandler(customer.line_channel_secret)
+            try:
+                handler.handle(body, signature)
+                app.logger.info(f"Message for customer_id: {customer.id}")
+                events = handler.parser.parse(body, signature)
+                for event in events:
+                    if isinstance(event, MessageEvent) and isinstance(event.message, TextMessage):
+                        handle_message(event, customer)
+                return 'OK'
+            except InvalidSignatureError:
+                continue
+        app.logger.warning("Invalid signature. No matching customer found.")
+        abort(400)
 
-    # ▼▼▼ NEW: LINE Event Handlers ▼▼▼
-    @handler.add(FollowEvent)
-    def handle_follow(event):
-        """Handle new user following the bot."""
-        reply_text = (
-            "友達追加ありがとうございます！\n\n"
-            "ウェブサービスのアカウントと連携するには、次の形式でメッセージを送ってください：\n\n"
-            "link あなたの登録メールアドレス"
-        )
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text=reply_text)
-        )
-
-    @handler.add(MessageEvent, message=TextMessage)
-    def handle_message(event):
-        """Handle user text messages."""
+    def handle_message(event, customer_data):
         user_message = event.message.text
-        line_user_id = event.source.user_id
-
-        # --- Account Linking Logic ---
-        if user_message.lower().startswith('link '):
-            email = user_message.split(' ')[1]
-            user = User.query.filter_by(email=email).first()
-            if user:
-                line_user = LineUser.query.filter_by(line_user_id=line_user_id).first()
-                if not line_user:
-                    line_user = LineUser(line_user_id=line_user_id)
-                
-                line_user.user_id = user.id
-                db.session.add(line_user)
-                db.session.commit()
-                reply_text = f"アカウント「{email}」との連携が完了しました。質問をどうぞ！"
-            else:
-                reply_text = f"メールアドレス「{email}」は登録されていません。先にウェブサイトからアカウントを作成してください。"
-            
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
-            return
-
-        # --- Chatbot Interaction Logic ---
-        line_user = LineUser.query.filter_by(line_user_id=line_user_id).first()
-        if not line_user or not line_user.user:
-            reply_text = (
-                "アカウントが連携されていません。\n"
-                "ウェブサービスのアカウントと連携するには、次の形式でメッセージを送ってください：\n\n"
-                "link あなたの登録メールアドレス"
-            )
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
-            return
-            
-        customer_data = line_user.user.customer_data
-        
-        # Check plan restrictions (optional but good practice)
+        line_bot_api = LineBotApi(customer_data.line_channel_token)
         if customer_data.plan == 'trial' and not customer_data.is_on_trial():
             reply_text = "無料トライアルは終了しました。サービスを継続して利用するには、ウェブサイトから有料プランにアップグレードしてください。"
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
             return
-            
         answer, _ = get_gemini_response(customer_data, user_message)
-
-        # Log conversation
         try:
             new_log = ConversationLog(user_question=user_message, bot_answer=answer, customer_data=customer_data)
             db.session.add(new_log)
@@ -473,13 +427,8 @@ def create_app(config_class=DevelopmentConfig):
         except Exception as e:
             print(f"LINEからのログ保存エラー: {e}")
             db.session.rollback()
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=answer))
 
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text=answer)
-        )
-
-    # --- Admin Routes (No Changes) ---
     @app.route('/admin')
     @login_required
     @admin_required
@@ -489,7 +438,6 @@ def create_app(config_class=DevelopmentConfig):
 
     return app
 
-# --- Application Execution & CLI Commands (No Changes) ---
 app = create_app()
 
 @app.cli.command("reset-db")
@@ -505,40 +453,29 @@ def init_db_command():
         db.create_all()
         print("データベースを初期化しました。")
 
-        # main.py の一番下のあたり
-
-
 @app.cli.command("make-admin")
 def make_admin_command():
-    """Creates a new admin user or promotes an existing user."""
     email = input("管理者に設定したいユーザーのメールアドレスを入力してください: ")
     user = User.query.filter_by(email=email).first()
-
     if not user:
         print(f"エラー: ユーザー '{email}' が見つかりません。")
         return
-
     user.is_admin = True
     db.session.commit()
     print(f"成功: ユーザー '{email}' が管理者に設定されました。")
 
 @app.cli.command("change-plan")
 def change_plan_command():
-    """ユーザーの契約プランを変更します。"""
     email = input("ユーザーのメールアドレスを入力してください: ")
     user = User.query.filter_by(email=email).first()
-
     if not user:
         print(f"エラー: ユーザー '{email}' が見つかりません。")
         return
-
     print(f"{email} の現在のプランは '{user.customer_data.plan}' です。")
     new_plan = input("新しいプラン名を入力してください (例: trial, starter, professional): ")
-
     if new_plan not in ['trial', 'starter', 'professional']:
         print(f"エラー: 無効なプラン名 '{new_plan}' です。")
         return
-
     user.customer_data.plan = new_plan
     db.session.commit()
     print(f"成功: ユーザー '{email}' のプランを '{new_plan}' に更新しました。")
