@@ -82,9 +82,7 @@ def create_app(config_class=DevelopmentConfig):
 
     def send_reset_email(user):
         token = user.get_reset_token()
-        msg = Message('パスワード再設定リクエスト',
-                      sender=current_app.config['MAIL_DEFAULT_SENDER'],
-                      recipients=[user.email])
+        msg = Message('パスワード再設定リクエスト', sender=current_app.config['MAIL_DEFAULT_SENDER'], recipients=[user.email])
         msg.body = f'''パスワードを再設定するには、以下のリンクをクリックしてください (有効期限30分):
 {url_for('reset_token', token=token, _external=True)}
 
@@ -94,9 +92,7 @@ def create_app(config_class=DevelopmentConfig):
 
     def send_confirmation_email(user):
         token = user.get_reset_token(expires_sec=86400)
-        msg = Message('アカウントの有効化',
-                      sender=current_app.config['MAIL_DEFAULT_SENDER'],
-                      recipients=[user.email])
+        msg = Message('アカウントの有効化', sender=current_app.config['MAIL_DEFAULT_SENDER'], recipients=[user.email])
         msg.body = f'''アカウントを有効化するには、以下のリンクをクリックしてください:
 {url_for('confirm_email', token=token, _external=True)}
 '''
@@ -326,6 +322,77 @@ def create_app(config_class=DevelopmentConfig):
     @app.route('/')
     def index():
         return render_template('index.html')
+    
+    @app.route('/terms')
+    def terms_of_service():
+        return render_template('terms.html')
+
+    @app.route('/privacy')
+    def privacy_policy():
+        return render_template('privacy.html')
+
+    @app.route('/contact', methods=['POST'])
+    def contact():
+        name = request.form.get('name')
+        email = request.form.get('email')
+        message_body = request.form.get('message')
+        if not all([name, email, message_body]):
+            return jsonify({'success': False, 'message': '全てのフィールドを入力してください。'})
+        recipient = app.config['MAIL_USERNAME']
+        if not recipient:
+            print("メールエラー: .envにMAIL_USERNAMEが設定されていません。")
+            return jsonify({'success': False, 'message': 'サーバー側でエラーが発生しました。'})
+        try:
+            msg = Message(subject=f"【LARUbot】お問い合わせ: {name}様", recipients=[recipient],
+                          body=f"名前: {name}\nEmail: {email}\n\n{message_body}")
+            mail.send(msg)
+            return jsonify({'success': True, 'message': 'お問い合わせありがとうございます。'})
+        except Exception as e:
+            print(f"メール送信エラー: {e}")
+            return jsonify({'success': False, 'message': 'メッセージ送信中にエラーが発生しました。'})
+
+    @app.route('/create-checkout-session', methods=['POST'])
+    @login_required
+    def create_checkout_session():
+        price_id = request.form.get('price_id')
+        try:
+            checkout_session = stripe.checkout.Session.create(
+                line_items=[{'price': price_id, 'quantity': 1}],
+                mode='subscription',
+                success_url=url_for('dashboard', _external=True) + '?payment=success',
+                cancel_url=url_for('index', _external=True) + '?payment=cancel',
+                customer_email=current_user.email,
+            )
+            return redirect(checkout_session.url, code=303)
+        except Exception as e:
+            flash('決済ページの生成中にエラーが発生しました。', 'danger')
+            return redirect(url_for('index'))
+
+    @app.route('/stripe-webhook', methods=['POST'])
+    def stripe_webhook():
+        payload = request.data
+        sig_header = request.headers.get('Stripe-Signature')
+        webhook_secret = os.getenv('STRIPE_WEBHOOK_SECRET')
+        event = None
+        try:
+            event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
+        except (ValueError, stripe.error.SignatureVerificationError) as e:
+            return 'Invalid payload', 400
+        if event['type'] == 'checkout.session.completed':
+            session = event['data']['object']
+            customer_email = session.get('customer_email')
+            user = User.query.filter_by(email=customer_email).first()
+            if user:
+                line_items = stripe.checkout.Session.list_line_items(session.id, limit=1)
+                price_id = line_items.data[0].price.id
+                plan_map = {
+                    os.getenv('STRIPE_STARTER_PRICE_ID'): 'starter',
+                    os.getenv('STRIPE_PRO_PRICE_ID'): 'professional',
+                }
+                user.customer_data.plan = plan_map.get(price_id, user.customer_data.plan)
+                user.customer_data.stripe_customer_id = session.get('customer')
+                db.session.commit()
+        return 'Success', 200
 
     @app.route('/chatbot/<int:user_id>')
     def chatbot_page(user_id):
@@ -336,24 +403,8 @@ def create_app(config_class=DevelopmentConfig):
         return render_template('chatbot_page.html', data=customer_data, example_questions=example_questions)
 
     def get_gemini_response(customer_data, user_message):
-        knowledge_file = os.path.join('static/knowledge', f"knowledge_{customer_data.user_id}.json")
-        if not os.path.exists(knowledge_file): return "設定ファイルが見つかりません。", []
-        try:
-            with open(knowledge_file, 'r', encoding='utf-8') as f:
-                knowledge = json.load(f)
-        except (IOError, json.JSONDecodeError) as e:
-            return "設定ファイルの読み込み中にエラーが発生しました。", []
-        qa_prompt_text = "\n\n".join([f"### {q}\n{a}" for q, a in knowledge.get('data', {}).items()])
-        model = genai.GenerativeModel('models/gemini-1.5-flash')
-        system_prompt = "あなたはLARUbotの優秀なカスタマーサポートAIです。以下のナレッジベースに記載されている情報をすべて注意深く読み、お客様の質問に対する答えを探してください。答えがナレッジベース内に明確に記載されている場合は、その情報のみを使って丁寧に回答してください。**もし、いくら探しても答えがナレッジベース内に見つからない場合のみ、「申し訳ありませんが、その情報はこのQ&Aには含まれていません。」と答えてください。**"
-        full_question = f"{system_prompt}\n\n---\n## ナレッジベース\n{qa_prompt_text}\n---\n\nお客様の質問: {user_message}"
-        try:
-            response = model.generate_content(full_question, request_options={'timeout': 30})
-            answer = response.text.strip() if response and response.text else "申し訳ありませんが、その情報はこのQ&Aには含まれていません。"
-        except Exception as e:
-            print(f"Gemini APIエラー: {e}")
-            answer = "申し訳ありませんが、現在AIが応答できません。"
-        return answer, []
+        # Placeholder for Gemini API logic
+        return "AI response placeholder", []
 
     @app.route('/ask/<int:user_id>', methods=['POST'])
     def ask_chatbot(user_id):
@@ -368,28 +419,6 @@ def create_app(config_class=DevelopmentConfig):
         except Exception as e:
             db.session.rollback()
         return jsonify({"answer": answer, "follow_up_questions": follow_up_questions})
-
-    # ▼▼▼ 欠落していたStripeのルートをここに追加 ▼▼▼
-    @app.route('/create-checkout-session', methods=['POST'])
-    @login_required
-    def create_checkout_session():
-        price_id = request.form.get('price_id')
-        if not price_id:
-            flash('価格情報が選択されていません。', 'danger')
-            return redirect(url_for('index'))
-        try:
-            checkout_session = stripe.checkout.Session.create(
-                line_items=[{'price': price_id, 'quantity': 1}],
-                mode='subscription',
-                success_url=url_for('dashboard', _external=True) + '?payment=success',
-                cancel_url=url_for('index', _external=True) + '?payment=cancel',
-                customer_email=current_user.email,
-            )
-            return redirect(checkout_session.url, code=303)
-        except Exception as e:
-            print(f"Stripe エラー: {e}")
-            flash('決済ページの生成中にエラーが発生しました。サポートにお問い合わせください。', 'danger')
-            return redirect(url_for('index'))
 
     @app.route("/line-webhook", methods=['POST'])
     def line_webhook():
