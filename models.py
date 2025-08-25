@@ -35,13 +35,14 @@ class CustomerData(db.Model):
 
     def is_on_trial(self):
         """トライアル期間中かどうかを判定する"""
-        return self.trial_ends_at and self.trial_ends_at > datetime.now(timezone.utc)
+        return self.trial_ends_at and self.trial_ends_at > datetime.utcnow() # 'now(timezone.utc)' -> 'utcnow()' に修正済み
 
     def trial_days_remaining(self):
         """トライアルの残り日数を計算する"""
         if not self.is_on_trial():
             return 0
-        delta = self.trial_ends_at - datetime.now(timezone.utc)
+        # is_on_trialがutcnow()を使うので、ここも合わせてutcnow()を使用
+        delta = self.trial_ends_at - datetime.utcnow()
         return delta.days + 1
         
 class QA(db.Model):
@@ -57,7 +58,6 @@ class ConversationLog(db.Model):
     timestamp = db.Column(db.DateTime, server_default=db.func.now())
     customer_data_id = db.Column(db.Integer, db.ForeignKey('customer_data.id'), nullable=False)
 
-# ▼▼▼【ここを修正・追加】LINEユーザー連携のための新しいモデル ▼▼▼
 class LineUser(db.Model):
     __tablename__ = 'line_user'
     id = db.Column(db.Integer, primary_key=True)

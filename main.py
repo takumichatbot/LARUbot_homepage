@@ -9,7 +9,7 @@ import google.generativeai as genai
 from flask_mail import Mail, Message
 from datetime import datetime, timedelta, timezone
 from functools import wraps
-from flask_migrate import Migrate  # ▼▼▼【修正点1】この行を追加 ▼▼▼
+from flask_migrate import Migrate
 
 # ▼▼▼ LINE SDK Imports ▼▼▼
 from linebot import LineBotApi, WebhookHandler
@@ -24,7 +24,7 @@ def create_app(config_class=DevelopmentConfig):
     app.config.from_object(config_class)
 
     db.init_app(app)
-    Migrate(app, db)  # ▼▼▼【修正点2】この行を追加 ▼▼▼
+    Migrate(app, db)
 
     login_manager = LoginManager()
     login_manager.init_app(app)
@@ -70,7 +70,7 @@ def create_app(config_class=DevelopmentConfig):
         all_qas = customer_data.qas.all()
         example_questions = [qa.question for qa in all_qas[:5]]
         knowledge_dict = {
-            "data": {qa.question: qa.answer for qa in all_as},
+            "data": {qa.question: qa.answer for qa in all_qas}, # 'all_as' -> 'all_qas' に修正済み
             "example_questions": example_questions
         }
         knowledge_dir = 'static/knowledge'
@@ -506,5 +506,4 @@ def init_db_command():
         print("データベースを初期化しました。")
 
 if __name__ == '__main__':
-    # port = int(os.environ.get("PORT", 5000)) # この行はコメントアウトするか、そのままでもOK
-    app.run(host='0.0.0.0', port=5005, debug=True) # portを5001に変更
+    app.run(host='0.0.0.0', port=5005, debug=True)
