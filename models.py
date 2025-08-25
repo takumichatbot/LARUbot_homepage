@@ -25,16 +25,14 @@ class CustomerData(db.Model):
     bot_name = db.Column(db.String(100), default='My Chatbot')
     welcome_message = db.Column(db.String(500), default='こんにちは！何かご質問はありますか？')
     header_color = db.Column(db.String(7), default='#0ea5e9')
-    plan = db.Column(db.String(50), default='free') 
+    plan = db.Column(db.String(50), default='trial') 
     stripe_customer_id = db.Column(db.String(255), nullable=True)
     
-    # ▼▼▼ トライアル終了日を保存する列を追加 ▼▼▼
     trial_ends_at = db.Column(db.DateTime, nullable=True)
 
     qas = db.relationship('QA', backref='customer_data', lazy='dynamic', cascade="all, delete-orphan")
     logs = db.relationship('ConversationLog', backref='customer_data', lazy='dynamic', cascade="all, delete-orphan")
 
-    # ▼▼▼ トライアル状況を判定するヘルパー関数を追加 ▼▼▼
     def is_on_trial(self):
         """トライアル期間中かどうかを判定する"""
         return self.trial_ends_at and self.trial_ends_at > datetime.now(timezone.utc)
@@ -58,3 +56,19 @@ class ConversationLog(db.Model):
     bot_answer = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, server_default=db.func.now())
     customer_data_id = db.Column(db.Integer, db.ForeignKey('customer_data.id'), nullable=False)
+
+# ▼▼▼【ここを修正・追加】LINEユーザー連携のための新しいモデル ▼▼▼
+class LineUser(db.Model):
+    __tablename__ = 'line_user'
+    id = db.Column(db.Integer, primary_key=True)
+    # LINEから提供される一意のユーザーID
+    line_user_id = db.Column(db.String(255), unique=True, nullable=False, index=True)
+    # サービス内のUserモデルとの紐付け
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    # Userモデルとのリレーションシップを定義
+    # これにより `line_user.user` のようにしてUserオブジェクトにアクセスできる
+    user = db.relationship('User', backref=db.backref('line_user', uselist=False))
+
+    def __repr__(self):
+        return f'<LineUser {self.line_user_id}>'

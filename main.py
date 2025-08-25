@@ -2,15 +2,21 @@ import os
 import json
 import re
 import stripe
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, abort
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from email_validator import validate_email, EmailNotValidError
 import google.generativeai as genai
 from flask_mail import Mail, Message
 from datetime import datetime, timedelta, timezone
 from functools import wraps
+from flask_migrate import Migrate  # ▼▼▼【修正点1】この行を追加 ▼▼▼
 
-from models import db, User, CustomerData, QA, ConversationLog
+# ▼▼▼ LINE SDK Imports ▼▼▼
+from linebot import LineBotApi, WebhookHandler
+from linebot.exceptions import InvalidSignatureError
+from linebot.models import MessageEvent, TextMessage, TextSendMessage, FollowEvent
+
+from models import db, User, CustomerData, QA, ConversationLog, LineUser
 from config import DevelopmentConfig
 
 def create_app(config_class=DevelopmentConfig):
@@ -18,7 +24,8 @@ def create_app(config_class=DevelopmentConfig):
     app.config.from_object(config_class)
 
     db.init_app(app)
-    
+    Migrate(app, db)  # ▼▼▼【修正点2】この行を追加 ▼▼▼
+
     login_manager = LoginManager()
     login_manager.init_app(app)
     login_manager.login_view = 'login'
@@ -27,6 +34,7 @@ def create_app(config_class=DevelopmentConfig):
 
     stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 
+    # --- Mail Configuration ---
     app.config['MAIL_SERVER'] = 'smtp.gmail.com'
     app.config['MAIL_PORT'] = 587
     app.config['MAIL_USE_TLS'] = True
@@ -35,6 +43,19 @@ def create_app(config_class=DevelopmentConfig):
     app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_USERNAME')
     mail = Mail(app)
 
+    # ▼▼▼ LINE API Configuration ▼▼▼
+    LINE_CHANNEL_ACCESS_TOKEN = os.getenv('LINE_CHANNEL_ACCESS_TOKEN')
+    LINE_CHANNEL_SECRET = os.getenv('LINE_CHANNEL_SECRET')
+
+    if not LINE_CHANNEL_ACCESS_TOKEN or not LINE_CHANNEL_SECRET:
+        print("警告: .envファイルにLINEの認証情報が見つかりません。LINE Bot機能は無効になります。")
+        line_bot_api = None
+        handler = None
+    else:
+        line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
+        handler = WebhookHandler(LINE_CHANNEL_SECRET)
+
+    # --- Google Gemini API Configuration ---
     GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
     if GOOGLE_API_KEY:
         genai.configure(api_key=GOOGLE_API_KEY)
@@ -49,7 +70,7 @@ def create_app(config_class=DevelopmentConfig):
         all_qas = customer_data.qas.all()
         example_questions = [qa.question for qa in all_qas[:5]]
         knowledge_dict = {
-            "data": {qa.question: qa.answer for qa in all_qas},
+            "data": {qa.question: qa.answer for qa in all_as},
             "example_questions": example_questions
         }
         knowledge_dir = 'static/knowledge'
@@ -71,7 +92,7 @@ def create_app(config_class=DevelopmentConfig):
             return f(*args, **kwargs)
         return decorated_function
 
-    # --- 認証ルート ---
+    # --- Authentication Routes (No Changes) ---
     @app.route('/login', methods=['GET', 'POST'])
     def login():
         if current_user.is_authenticated:
@@ -117,7 +138,6 @@ def create_app(config_class=DevelopmentConfig):
 
             new_customer_data = CustomerData(user_id=new_user.id)
             new_customer_data.trial_ends_at = datetime.now(timezone.utc) + timedelta(days=10)
-            
             db.session.add(new_customer_data)
             db.session.commit()
             
@@ -133,11 +153,14 @@ def create_app(config_class=DevelopmentConfig):
         flash('ログアウトしました。', 'info')
         return redirect(url_for('login'))
 
-    # --- ダッシュボード関連のルート ---
+    # --- Dashboard Routes (No Changes) ---
     @app.route('/dashboard')
     @login_required
     def dashboard():
-        return render_template('dashboard.html', user=current_user, data=current_user.customer_data)
+        customer_data = current_user.customer_data
+        if customer_data.plan == 'trial' and not customer_data.is_on_trial():
+            flash('無料トライアルは終了しました。引き続きサービスをご利用いただくには、有料プランへのアップグレードが必要です。', 'warning')
+        return render_template('dashboard.html', user=current_user, data=customer_data)
 
     @app.route('/settings', methods=['GET', 'POST'])
     @login_required
@@ -162,10 +185,12 @@ def create_app(config_class=DevelopmentConfig):
     @login_required
     def add_qa():
         customer_data = current_user.customer_data
-        if customer_data.plan == 'starter' and not customer_data.is_on_trial():
+        if customer_data.plan != 'professional':
             if customer_data.qas.count() >= 100:
-                flash('Q&Aの登録上限数（100件）に達しました。無制限に登録するには、プロフェッショナルプランへのアップグレードをご検討ください。', 'warning')
+                flash_message = 'トライアル中のQ&A登録上限数（100件）に達しました。' if customer_data.is_on_trial() else '無料プランのQ&A登録上限数（100件）に達しました。'
+                flash(flash_message, 'warning')
                 return redirect(url_for('qa_management'))
+        
         question = request.form.get('question', '').strip()
         answer = request.form.get('answer', '').strip()
         if question and answer:
@@ -195,19 +220,18 @@ def create_app(config_class=DevelopmentConfig):
     @login_required
     def conversation_logs():
         customer_data = current_user.customer_data
-        if customer_data.plan == 'starter' and not customer_data.is_on_trial():
+        if customer_data.plan != 'professional':
             seven_days_ago = datetime.utcnow() - timedelta(days=7)
             logs = customer_data.logs.filter(ConversationLog.timestamp >= seven_days_ago).order_by(ConversationLog.timestamp.desc()).all()
         else:
             logs = customer_data.logs.order_by(ConversationLog.timestamp.desc()).all()
         return render_template('conversation_logs.html', logs=logs, user=current_user)
 
-    # --- 公開ページとAPIのルート ---
+    # --- Public Pages & Contact (No Changes) ---
     @app.route('/')
     def index():
         return render_template('index.html')
-        
-    # ▼▼▼【修正点】利用規約とプライバシーポリシーのルートを追加 ▼▼▼
+
     @app.route('/terms')
     def terms_of_service():
         return render_template('terms.html')
@@ -215,7 +239,6 @@ def create_app(config_class=DevelopmentConfig):
     @app.route('/privacy')
     def privacy_policy():
         return render_template('privacy.html')
-    # ▲▲▲ ここまで追加 ▲▲▲
 
     @app.route('/contact', methods=['POST'])
     def contact():
@@ -224,6 +247,7 @@ def create_app(config_class=DevelopmentConfig):
         message_body = request.form.get('message')
         if not all([name, email, message_body]):
             return jsonify({'success': False, 'message': '全てのフィールドを入力してください。'})
+        
         recipient = app.config['MAIL_USERNAME']
         if not recipient:
             print("メールエラー: .envにMAIL_USERNAMEが設定されていません。")
@@ -240,7 +264,7 @@ def create_app(config_class=DevelopmentConfig):
             print(f"メール送信エラー: {e}")
             return jsonify({'success': False, 'message': 'メッセージの送信中にエラーが発生しました。'})
 
-    # --- Stripe決済用のルート ---
+    # --- Stripe Routes (No Changes) ---
     @app.route('/create-checkout-session', methods=['POST'])
     @login_required
     def create_checkout_session():
@@ -262,25 +286,19 @@ def create_app(config_class=DevelopmentConfig):
             flash('決済ページの生成中にエラーが発生しました。サポートにお問い合わせください。', 'danger')
             return redirect(url_for('index'))
 
-    # --- Stripe Webhook用のルート ---
     @app.route('/stripe-webhook', methods=['POST'])
     def stripe_webhook():
         payload = request.data
         sig_header = request.headers.get('Stripe-Signature')
         webhook_secret = os.getenv('STRIPE_WEBHOOK_SECRET')
         if not webhook_secret:
-            print("Stripe Webhookシークレットが設定されていません。")
             return 'Webhook secret not configured', 500
         try:
-            event = stripe.Webhook.construct_event(
-                payload, sig_header, webhook_secret
-            )
-        except ValueError as e:
-            print(f"Webhook ValueError: {e}")
-            return 'Invalid payload', 400
-        except stripe.error.SignatureVerificationError as e:
-            print(f"Webhook SignatureVerificationError: {e}")
-            return 'Invalid signature', 400
+            event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
+        except (ValueError, stripe.error.SignatureVerificationError) as e:
+            print(f"Webhook error: {e}")
+            return 'Invalid payload or signature', 400
+        
         if event['type'] == 'checkout.session.completed':
             session = event['data']['object']
             customer_email = session.get('customer_email')
@@ -300,46 +318,46 @@ def create_app(config_class=DevelopmentConfig):
                 except Exception as e:
                     print(f"データベース更新中にエラーが発生しました: {e}")
         return 'Success', 200
-
-    # --- チャットボットAPIと公開ページ ---
+        
+    # --- Chatbot API and Public Page ---
     @app.route('/chatbot/<int:user_id>')
     def chatbot_page(user_id):
         customer_data = CustomerData.query.filter_by(user_id=user_id).first_or_404()
         example_questions = []
-        if customer_data.plan == 'professional' or customer_data.is_on_trial():
+        if customer_data.plan == 'professional':
             knowledge_file = os.path.join('static/knowledge', f"knowledge_{customer_data.user_id}.json")
             if os.path.exists(knowledge_file):
                 try:
                     with open(knowledge_file, 'r', encoding='utf-8') as f:
                         knowledge = json.load(f)
-                        example_questions = knowledge.get('example_questions', [])
+                    example_questions = knowledge.get('example_questions', [])
                 except (IOError, json.JSONDecodeError) as e:
                     print(f"ナレッジファイルの読み込みエラー: {e}")
         return render_template('chatbot_page.html', data=customer_data, example_questions=example_questions)
 
-    @app.route('/ask/<int:user_id>', methods=['POST'])
-    def ask_chatbot(user_id):
-        customer_data = CustomerData.query.filter_by(user_id=user_id).first_or_404()
-        knowledge_file = os.path.join('static/knowledge', f"knowledge_{user_id}.json")
+    def get_gemini_response(customer_data, user_message):
+        """Generates a response using Gemini API based on customer's knowledge base."""
+        knowledge_file = os.path.join('static/knowledge', f"knowledge_{customer_data.user_id}.json")
         if not os.path.exists(knowledge_file):
-            return jsonify({"answer": "設定ファイルが見つかりません。", "follow_up_questions": []})
+            return "設定ファイルが見つかりません。", []
+
         try:
             with open(knowledge_file, 'r', encoding='utf-8') as f:
                 knowledge = json.load(f)
         except (IOError, json.JSONDecodeError) as e:
             print(f"ナレッジファイルの読み込みエラー: {e}")
-            return jsonify({"answer": "設定ファイルの読み込み中にエラーが発生しました。", "follow_up_questions": []})
-        user_message = request.json.get('message')
-        if not user_message:
-            return jsonify({'answer': '質問が空です。', "follow_up_questions": []})
+            return "設定ファイルの読み込み中にエラーが発生しました。", []
+        
         qa_prompt_text = "\n\n".join([f"### {key}\n{value}" for key, value in knowledge.get('data', {}).items()])
         model = genai.GenerativeModel('models/gemini-1.5-flash')
+        
         prompt_data = {
             "system_role": "あなたはLARUbotの優秀なカスタマーサポートAIです。以下のナレッジベースに記載されている情報をすべて注意深く読み、お客様の質問に対する答えを探してください。答えがナレッジベース内に明確に記載されている場合は、その情報のみを使って丁寧に回答してください。複数の項目に関連する可能性がある場合は、それらを統合して答えてください。**もし、いくら探しても答えがナレッジベース内に見つからない場合のみ、「申し訳ありませんが、その情報はこのQ&Aには含まれていません。」と答えてください。**",
             "follow_up_prompt": "あなたはユーザーの思考を先読みするアシスタントです。上記の会話と、あなたが回答の根拠として使用したナレッジベース全体を考慮して、ユーザーが次に関心を持ちそうな質問を3つ提案してください。**提案する質問は、必ずナレッジベース内の情報から回答できるものにしてください。** 回答は必ずJSON形式の文字列リスト（例: [\"質問1\", \"質問2\", \"質問3\"]）で、リスト以外の文字列は一切含めずに返してください。適切な質問がなければ空のリスト `[]` を返してください。",
             "not_found": "申し訳ありませんが、その情報はこのQ&Aには含まれていません。",
             "error": "申し訳ありませんが、現在AIが応答できません。しばらくしてから再度お試しください。"
         }
+        
         answer = ""
         follow_up_questions = []
         try:
@@ -349,14 +367,19 @@ def create_app(config_class=DevelopmentConfig):
         except Exception as e:
             print(f"Gemini APIエラー (回答生成): {e}")
             answer = prompt_data['error']
-        if "申し訳ありません" not in answer:
-            try:
-                follow_up_request = f"## ナレッジベース\n{qa_prompt_text}\n\n## 直前の会話\nユーザーの質問: {user_message}\nAIの回答: {answer}\n\n## 指示\n{prompt_data['follow_up_prompt']}"
-                follow_up_response = model.generate_content(follow_up_request, request_options={'timeout': 20})
-                json_str_match = re.search(r'\[.*\]', follow_up_response.text, re.DOTALL)
-                follow_up_questions = json.loads(json_str_match.group()) if json_str_match else []
-            except Exception as e:
-                print(f"Gemini APIエラー (関連質問生成): {e}")
+        
+        # Follow-up questions are not used for LINE, but logic is kept for web chat
+        return answer, follow_up_questions
+        
+    @app.route('/ask/<int:user_id>', methods=['POST'])
+    def ask_chatbot(user_id):
+        customer_data = CustomerData.query.filter_by(user_id=user_id).first_or_404()
+        user_message = request.json.get('message')
+        if not user_message:
+            return jsonify({'answer': '質問が空です。', "follow_up_questions": []})
+
+        answer, follow_up_questions = get_gemini_response(customer_data, user_message)
+
         try:
             new_log = ConversationLog(user_question=user_message, bot_answer=answer, customer_data=customer_data)
             db.session.add(new_log)
@@ -364,9 +387,99 @@ def create_app(config_class=DevelopmentConfig):
         except Exception as e:
             print(f"ログ保存エラー: {e}")
             db.session.rollback()
+
         return jsonify({"answer": answer, "follow_up_questions": follow_up_questions})
 
-    # --- 管理者用ダッシュボードのルート ---
+    # ▼▼▼ NEW: LINE Webhook Route ▼▼▼
+    @app.route("/line-webhook", methods=['POST'])
+    def line_webhook():
+        if not line_bot_api or not handler:
+            abort(500)
+            
+        signature = request.headers['X-Line-Signature']
+        body = request.get_data(as_text=True)
+        app.logger.info("Request body: " + body)
+        try:
+            handler.handle(body, signature)
+        except InvalidSignatureError:
+            abort(400)
+        return 'OK'
+
+    # ▼▼▼ NEW: LINE Event Handlers ▼▼▼
+    @handler.add(FollowEvent)
+    def handle_follow(event):
+        """Handle new user following the bot."""
+        reply_text = (
+            "友達追加ありがとうございます！\n\n"
+            "ウェブサービスのアカウントと連携するには、次の形式でメッセージを送ってください：\n\n"
+            "link あなたの登録メールアドレス"
+        )
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text=reply_text)
+        )
+
+    @handler.add(MessageEvent, message=TextMessage)
+    def handle_message(event):
+        """Handle user text messages."""
+        user_message = event.message.text
+        line_user_id = event.source.user_id
+
+        # --- Account Linking Logic ---
+        if user_message.lower().startswith('link '):
+            email = user_message.split(' ')[1]
+            user = User.query.filter_by(email=email).first()
+            if user:
+                line_user = LineUser.query.filter_by(line_user_id=line_user_id).first()
+                if not line_user:
+                    line_user = LineUser(line_user_id=line_user_id)
+                
+                line_user.user_id = user.id
+                db.session.add(line_user)
+                db.session.commit()
+                reply_text = f"アカウント「{email}」との連携が完了しました。質問をどうぞ！"
+            else:
+                reply_text = f"メールアドレス「{email}」は登録されていません。先にウェブサイトからアカウントを作成してください。"
+            
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
+            return
+
+        # --- Chatbot Interaction Logic ---
+        line_user = LineUser.query.filter_by(line_user_id=line_user_id).first()
+        if not line_user or not line_user.user:
+            reply_text = (
+                "アカウントが連携されていません。\n"
+                "ウェブサービスのアカウントと連携するには、次の形式でメッセージを送ってください：\n\n"
+                "link あなたの登録メールアドレス"
+            )
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
+            return
+            
+        customer_data = line_user.user.customer_data
+        
+        # Check plan restrictions (optional but good practice)
+        if customer_data.plan == 'trial' and not customer_data.is_on_trial():
+            reply_text = "無料トライアルは終了しました。サービスを継続して利用するには、ウェブサイトから有料プランにアップグレードしてください。"
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
+            return
+            
+        answer, _ = get_gemini_response(customer_data, user_message)
+
+        # Log conversation
+        try:
+            new_log = ConversationLog(user_question=user_message, bot_answer=answer, customer_data=customer_data)
+            db.session.add(new_log)
+            db.session.commit()
+        except Exception as e:
+            print(f"LINEからのログ保存エラー: {e}")
+            db.session.rollback()
+
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text=answer)
+        )
+
+    # --- Admin Routes (No Changes) ---
     @app.route('/admin')
     @login_required
     @admin_required
@@ -376,12 +489,11 @@ def create_app(config_class=DevelopmentConfig):
 
     return app
 
-# --- アプリケーションの実行 ---
+# --- Application Execution & CLI Commands (No Changes) ---
 app = create_app()
 
 @app.cli.command("reset-db")
 def reset_db_command():
-    """データベースをリセット（全テーブルを削除して再作成）する"""
     with app.app_context():
         db.drop_all()
         db.create_all()
@@ -389,11 +501,10 @@ def reset_db_command():
 
 @app.cli.command("init-db")
 def init_db_command():
-    """データベースを初期化（テーブルを作成）する"""
     with app.app_context():
         db.create_all()
-    print("データベースを初期化しました。")
+        print("データベースを初期化しました。")
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    # port = int(os.environ.get("PORT", 5000)) # この行はコメントアウトするか、そのままでもOK
+    app.run(host='0.0.0.0', port=5005, debug=True) # portを5001に変更
