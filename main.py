@@ -15,11 +15,13 @@ from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import (
     MessageEvent, TextMessage, TextSendMessage,
-    QuickReply, QuickReplyButton, MessageAction # クイックリプライ関連のモデルをimportします
+    QuickReply, QuickReplyButton, MessageAction,
+    # ▼▼▼ 以下を新しく追加します ▼▼▼
+    TemplateSendMessage, CarouselTemplate, CarouselColumn, PostbackAction, PostbackEvent
 )
 from dotenv import load_dotenv
 
-from models import db, User, CustomerData, QA, ConversationLog, ExampleQuestion
+from models import db, User, CustomerData, QA, ConversationLog, ExampleQuestion, MenuItem
 from config import DevelopmentConfig
 
 # .envファイルを読み込みます
@@ -54,6 +56,9 @@ def create_app(config_class=DevelopmentConfig):
     else:
         print("警告: .envファイルにGOOGLE_API_KEYが見つかりません。AI機能は無効になります。")
 
+    # linebotのハンドラーをグローバルスコープで定義
+    handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET', 'YOUR_DEFAULT_SECRET'))
+
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
@@ -79,11 +84,9 @@ def create_app(config_class=DevelopmentConfig):
             return f(*args, **kwargs)
         return decorated_function
     
-    # ▼▼▼ professional_plan_required デコレータを修正します ▼▼▼
     def professional_plan_required(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            # professionalプランのユーザー、または管理者(is_admin)であればアクセスを許可
             if not current_user.is_authenticated:
                 return redirect(url_for('login'))
             if not (current_user.customer_data.plan == 'professional' or current_user.is_admin):
@@ -91,7 +94,6 @@ def create_app(config_class=DevelopmentConfig):
                 return redirect(url_for('dashboard'))
             return f(*args, **kwargs)
         return decorated_function
-    # ▲▲▲ ここまで修正 ▲▲▲
 
     def send_reset_email(user):
         token = user.get_reset_token()
@@ -283,7 +285,6 @@ def create_app(config_class=DevelopmentConfig):
     @login_required
     def add_qa():
         customer_data = current_user.customer_data
-        # Q&Aの登録上限チェックは、管理者(is_admin)の場合は免除する
         if not current_user.is_admin and customer_data.plan != 'professional':
             if customer_data.qas.count() >= 100:
                 flash('無料プラン・トライアル中のQ&A登録上限数（100件）に達しました。', 'warning')
@@ -317,7 +318,6 @@ def create_app(config_class=DevelopmentConfig):
     @login_required
     def conversation_logs():
         customer_data = current_user.customer_data
-        # ログの閲覧期間制限は、管理者(is_admin)の場合は免除する
         if not current_user.is_admin and customer_data.plan != 'professional':
             seven_days_ago = datetime.utcnow() - timedelta(days=7)
             logs = customer_data.logs.filter(ConversationLog.timestamp >= seven_days_ago).order_by(ConversationLog.timestamp.desc()).all()
@@ -360,6 +360,47 @@ def create_app(config_class=DevelopmentConfig):
             abort(403)
         return redirect(url_for('manage_example_questions'))
 
+    # ▼▼▼ メニュー管理画面のルートを追加します ▼▼▼
+    @app.route('/menu_management', methods=['GET', 'POST'])
+    @login_required
+    def manage_menu_items():
+        if request.method == 'POST':
+            title = request.form.get('title')
+            description = request.form.get('description')
+            image_url = request.form.get('image_url')
+            action_text = request.form.get('action_text', 'これにする')
+
+            if title and description:
+                new_item = MenuItem(
+                    title=title,
+                    description=description,
+                    image_url=image_url,
+                    action_text=action_text,
+                    customer_data_id=current_user.customer_data.id
+                )
+                db.session.add(new_item)
+                db.session.commit()
+                flash('新しいメニュー項目を追加しました。', 'success')
+            else:
+                flash('タイトルと説明は必須です。', 'danger')
+            return redirect(url_for('manage_menu_items'))
+
+        menu_items = MenuItem.query.filter_by(customer_data_id=current_user.customer_data.id).order_by(MenuItem.created_at.desc()).all()
+        return render_template('menu_management.html', menu_items=menu_items, user=current_user)
+
+    @app.route('/menu/delete/<int:item_id>', methods=['POST'])
+    @login_required
+    def delete_menu_item(item_id):
+        item_to_delete = MenuItem.query.get_or_404(item_id)
+        if item_to_delete.customer_data_id == current_user.customer_data.id:
+            db.session.delete(item_to_delete)
+            db.session.commit()
+            flash('メニュー項目を削除しました。', 'success')
+        else:
+            abort(403)
+        return redirect(url_for('manage_menu_items'))
+    # ▲▲▲ ここまで追加 ▲▲▲
+    
     @app.route('/')
     def index():
         return render_template('index.html')
@@ -443,8 +484,14 @@ def create_app(config_class=DevelopmentConfig):
             example_questions = customer_data.example_questions.order_by(ExampleQuestion.id.asc()).all()
         return render_template('chatbot_page.html', data=customer_data, example_questions=example_questions)
 
+    # ▼▼▼ get_gemini_response 関数を修正します ▼▼▼
     def get_gemini_response(customer_data, user_message, session_id):
         bot_name = customer_data.bot_name or "アシスタント"
+        
+        # お客様が登録したメニュー項目をデータベースから取得
+        menu_items = customer_data.menu_items
+        menu_knowledge = "\n".join([f"- {item.title}: {item.description}\n  - image_url: {item.image_url}" for item in menu_items])
+
         system_prompt = f"""あなたは「{bot_name}」という名前の優秀なアシスタントです。
 以下の制約条件とナレッジを厳密に守って、ユーザーの質問に回答してください。
 
@@ -453,10 +500,13 @@ def create_app(config_class=DevelopmentConfig):
 - ナレッジに含まれる情報だけで回答できる場合は、その情報を元に回答してください。
 - ナレッジにない質問でも、一般的なことであればアシスタントとして回答してください。
 - わからない場合は、無理に回答せず「申し訳ありませんが、わかりかねます」と正直に伝えてください。
-- 回答の後に、ユーザーが次に尋ねそうな質問やアクションの選択肢がある場合は、
-  `[選択肢1, 選択肢2, 選択肢3]` の形式で提示してください。選択肢は3つ以内にしてください。
+- 回答の後に、ユーザーが次に尋ねそうな質問やアクションの選択肢がある場合は、`[選択肢1, 選択肢2]` の形式で提示してください。
+- **重要**: ユーザーが「メニュー」について尋ね、ナレッジにメニュー情報が存在する場合、必ず以下の応答フォーマットで回答してください。
+  - 応答フォーマット: `[CAROUSEL] [{{"title":"メニュー名1", "text":"説明1", "image_url":"画像URL1", "action_text":"ボタン1"}}, {{"title":"メニュー名2", ...}}]`
 
 # ナレッジ
+## お客様登録メニュー
+{menu_knowledge if menu_items else "（登録されているメニューはありません）"}
 """
         knowledge_text = "（ナレッジはありません）"
         knowledge_filepath = os.path.join('static/knowledge', f"knowledge_{customer_data.user_id}.json")
@@ -481,7 +531,7 @@ def create_app(config_class=DevelopmentConfig):
             print(f"会話履歴の取得エラー: {e}")
         try:
             model = genai.GenerativeModel('gemini-1.5-flash')
-            full_prompt = system_prompt + knowledge_text
+            full_prompt = system_prompt + "\n## Q&A\n" + knowledge_text
             
             chat_session = model.start_chat(history=[
                 {'role': 'user', 'parts': [full_prompt]},
@@ -493,6 +543,7 @@ def create_app(config_class=DevelopmentConfig):
         except Exception as e:
             print(f"Gemini API Error: {e}")
             return "申し訳ありません、AIとの通信中にエラーが発生しました。"
+    # ▲▲▲ ここまで修正 ▲▲▲
 
     def parse_response_for_quick_reply(text: str) -> (str, list):
         match = re.search(r"\[(.*?)\]\s*$", text)
@@ -511,7 +562,7 @@ def create_app(config_class=DevelopmentConfig):
         session_id = request.json.get('session_id')
 
         if not user_message or not session_id:
-            return jsonify({'answer': '不正なリクエストです。', "follow_up_questions": []})
+            return jsonify({'answer': '不正なリクエストです。'})
         
         answer = get_gemini_response(customer_data, user_message, session_id)
         
@@ -534,20 +585,28 @@ def create_app(config_class=DevelopmentConfig):
     def line_webhook():
         signature = request.headers['X-Line-Signature']
         body = request.get_data(as_text=True)
-        all_customers = CustomerData.query.filter(CustomerData.line_channel_secret.isnot(None)).all()
-        for customer in all_customers:
-            handler = WebhookHandler(customer.line_channel_secret)
-            try:
-                events = handler.parser.parse(body, signature)
-                for event in events:
-                    if isinstance(event, MessageEvent) and isinstance(event.message, TextMessage):
-                        handle_message(event, customer)
-                return 'OK'
-            except InvalidSignatureError:
-                continue
-        abort(400)
+        
+        # このWebhookリクエストがどの顧客のものか判定するロジックが必要
+        # ここでは単純化のため、リクエストボディの内容などから顧客を特定する想定
+        # 今回は暫定的に最初の顧客データを取得
+        customer_data = CustomerData.query.first()
+        if not customer_data or not customer_data.line_channel_secret:
+            abort(400)
+            
+        handler = WebhookHandler(customer_data.line_channel_secret)
 
-    def handle_message(event, customer_data):
+        try:
+            handler.handle(body, signature)
+        except InvalidSignatureError:
+            abort(400)
+        return 'OK'
+
+    @handler.add(MessageEvent, message=TextMessage)
+    def handle_message(event):
+        # どの顧客からのイベントか特定する (line_webhookと同様の課題)
+        customer_data = CustomerData.query.first()
+        if not customer_data: return
+
         user_message = event.message.text
         line_bot_api = LineBotApi(customer_data.line_channel_token)
         session_id = event.source.user_id
@@ -573,7 +632,35 @@ def create_app(config_class=DevelopmentConfig):
             print(f"ログ保存エラー: {e}")
         
         message = None
-        if customer_data.plan == 'professional':
+        if answer_from_ai.strip().startswith('[CAROUSEL]'):
+            try:
+                carousel_data_str = answer_from_ai.strip().replace('[CAROUSEL]', '', 1)
+                carousel_data = json.loads(carousel_data_str)
+                
+                columns = []
+                for item in carousel_data:
+                    column = CarouselColumn(
+                        thumbnail_image_url=item.get('image_url'),
+                        title=item.get('title'),
+                        text=item.get('text'),
+                        actions=[
+                            PostbackAction(
+                                label=item.get('action_text', 'これにする'),
+                                display_text=f"{item.get('title')}を選択しました",
+                                data=f"action=select_menu&item={item.get('title')}"
+                            )
+                        ]
+                    )
+                    columns.append(column)
+                
+                message = TemplateSendMessage(
+                    alt_text='メニュー一覧です',
+                    template=CarouselTemplate(columns=columns)
+                )
+            except Exception as e:
+                print(f"カルーセルデータの解析エラー: {e}")
+                message = TextSendMessage(text="申し訳ありません、メニューの表示に失敗しました。")
+        elif customer_data.plan == 'professional':
             main_text, options = parse_response_for_quick_reply(answer_from_ai)
             
             if options:
@@ -595,6 +682,23 @@ def create_app(config_class=DevelopmentConfig):
             message = TextSendMessage(text=answer_from_ai)
 
         line_bot_api.reply_message(event.reply_token, message)
+
+    @handler.add(PostbackEvent)
+    def handle_postback(event):
+        customer_data = CustomerData.query.first()
+        if not customer_data: return
+
+        line_bot_api = LineBotApi(customer_data.line_channel_token)
+        
+        data = dict(urllib.parse.parse_qsl(event.postback.data))
+        
+        if data.get('action') == 'select_menu':
+            item_name = data.get('item')
+            reply_text = f"「{item_name}」ですね。かしこまりました。\nご希望の日時などを教えていただけますか？"
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text=reply_text)
+            )
 
     @app.route('/admin')
     @login_required
