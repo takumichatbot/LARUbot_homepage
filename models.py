@@ -53,6 +53,10 @@ class CustomerData(db.Model):
     qas = db.relationship('QA', backref='customer_data', lazy='dynamic', cascade="all, delete-orphan")
     logs = db.relationship('ConversationLog', backref='customer_data', lazy='dynamic', cascade="all, delete-orphan")
     example_questions = db.relationship('ExampleQuestion', backref='customer_data', lazy='dynamic', cascade="all, delete-orphan")
+    
+    # ▼▼▼ 既存のCustomerDataモデルに、この1行を追加します ▼▼▼
+    menu_items = db.relationship('MenuItem', backref='customer_data', lazy=True, cascade="all, delete-orphan")
+    # ▲▲▲ ここまで追加 ▲▲▲
 
     def is_on_trial(self):
         return self.trial_ends_at and self.trial_ends_at > datetime.utcnow()
@@ -94,3 +98,18 @@ class LineUser(db.Model):
 
     def __repr__(self):
         return f'<LineUser {self.line_user_id}>'
+
+# ▼▼▼ このMenuItemクラスをまるごとファイルの一番下に追加します ▼▼▼
+class MenuItem(db.Model):
+    """カルーセルメニュー項目を保存するためのモデル"""
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(200), nullable=False)
+    image_url = db.Column(db.String(500), nullable=True) # 画像は任意
+    action_text = db.Column(db.String(50), nullable=False, default='これにする')
+    customer_data_id = db.Column(db.Integer, db.ForeignKey('customer_data.id'), nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<MenuItem {self.title}>'
+# ▲▲▲ ここまで追加 ▲▲▲
