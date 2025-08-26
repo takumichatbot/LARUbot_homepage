@@ -2,7 +2,7 @@ import os
 import json
 import stripe
 import urllib.parse
-import re # 正規表現を扱うためにimportします
+import re
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, abort, current_app
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from email_validator import validate_email, EmailNotValidError
@@ -16,7 +16,6 @@ from linebot.exceptions import InvalidSignatureError
 from linebot.models import (
     MessageEvent, TextMessage, TextSendMessage,
     QuickReply, QuickReplyButton, MessageAction,
-    # ▼▼▼ カルーセル関連のインポート ▼▼▼
     TemplateSendMessage, CarouselTemplate, CarouselColumn, PostbackAction, PostbackEvent
 )
 from dotenv import load_dotenv
@@ -24,7 +23,6 @@ from dotenv import load_dotenv
 from models import db, User, CustomerData, QA, ConversationLog, ExampleQuestion, MenuItem
 from config import DevelopmentConfig
 
-# .envファイルを読み込みます
 load_dotenv()
 
 def create_app(config_class=DevelopmentConfig):
@@ -54,7 +52,7 @@ def create_app(config_class=DevelopmentConfig):
     if GOOGLE_API_KEY:
         genai.configure(api_key=GOOGLE_API_KEY)
     else:
-        print("警告: .envファイルにGOOGLE_API_KEYが見つかりません。AI機能は無効になります。")
+        print("警告: .envファイルにGOOGLE_API_KEYが見つかりません。")
 
     @login_manager.user_loader
     def load_user(user_id):
@@ -495,7 +493,7 @@ def create_app(config_class=DevelopmentConfig):
 - わからない場合は、無理に回答せず「申し訳ありませんが、わかりかねます」と正直に伝えてください。
 - 回答の後に、ユーザーが次に尋ねそうな質問やアクションの選択肢がある場合は、`[選択肢1, 選択肢2]` の形式で提示してください。
 - **重要**: ユーザーが「メニュー」について尋ね、ナレッジにメニュー情報が存在する場合、必ず以下の応答フォーマットで回答してください。
-  - 応答フォーマット: `[CAROUSEL] [{{"title":"{item.title}", "text":"{item.description}", "image_url":"{item.image_url}", "action_text":"{item.action_text}"}} for item in menu_items]`
+  - 応答フォーマット: `[CAROUSEL] [{{"title":"メニュー名1", "text":"説明1", "image_url":"画像URL1", "action_text":"ボタン1"}}, {{"title":"メニュー名2", ...}}]`
 
 # ナレッジ
 ## お客様登録メニュー
@@ -579,23 +577,28 @@ def create_app(config_class=DevelopmentConfig):
         signature = request.headers['X-Line-Signature']
         body = request.get_data(as_text=True)
         
-        # どの顧客からのリクエストかを判定する (暫定的に最初の顧客を取得)
-        customer_data = CustomerData.query.first()
-        if not customer_data or not customer_data.line_channel_secret:
-            abort(400)
+        # どの顧客からのリクエストかを判定する
+        # ここではすべての顧客のシークレットを試す
+        all_customers = CustomerData.query.filter(CustomerData.line_channel_secret.isnot(None)).all()
+        for customer in all_customers:
+            handler = WebhookHandler(customer.line_channel_secret)
+            try:
+                events = handler.parser.parse(body, signature)
+                for event in events:
+                    if isinstance(event, MessageEvent) and isinstance(event.message, TextMessage):
+                        handle_message(event, customer)
+                    elif isinstance(event, PostbackEvent):
+                        handle_postback(event, customer)
+                return 'OK' # 署名が一致したので処理終了
+            except InvalidSignatureError:
+                continue # 署名が不一致なら次の顧客のシークレットで試す
         
-        handler = WebhookHandler(customer_data.line_channel_secret)
-        try:
-            handler.handle(body, signature)
-        except InvalidSignatureError:
-            abort(400)
-        return 'OK'
+        abort(400) # どの顧客のシークレットとも一致しなかった
 
-    @handler.add(MessageEvent, message=TextMessage)
-    def handle_message(event):
-        customer_data = CustomerData.query.first()
-        if not customer_data: return
-
+    # handle_messageとhandle_postbackから@handler.addデコレータを削除し、
+    # 引数に customer_data を追加します。
+    
+    def handle_message(event, customer_data):
         user_message = event.message.text
         line_bot_api = LineBotApi(customer_data.line_channel_token)
         session_id = event.source.user_id
@@ -649,7 +652,8 @@ def create_app(config_class=DevelopmentConfig):
             except Exception as e:
                 print(f"カルーセルデータの解析エラー: {e}")
                 message = TextSendMessage(text="申し訳ありません、メニューの表示に失敗しました。")
-        elif customer_data.plan in ['professional', 'trial']:
+
+        elif customer_data.plan in ['professional', 'trial'] or current_user.is_admin:
             main_text, options = parse_response_for_quick_reply(answer_from_ai)
             
             if options:
@@ -672,13 +676,8 @@ def create_app(config_class=DevelopmentConfig):
 
         line_bot_api.reply_message(event.reply_token, message)
 
-    @handler.add(PostbackEvent)
-    def handle_postback(event):
-        customer_data = CustomerData.query.first()
-        if not customer_data: return
-
+    def handle_postback(event, customer_data):
         line_bot_api = LineBotApi(customer_data.line_channel_token)
-        
         data = dict(urllib.parse.parse_qsl(event.postback.data))
         
         if data.get('action') == 'select_menu':
