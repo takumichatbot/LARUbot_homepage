@@ -16,7 +16,7 @@ from linebot.exceptions import InvalidSignatureError
 from linebot.models import (
     MessageEvent, TextMessage, TextSendMessage,
     QuickReply, QuickReplyButton, MessageAction,
-    # ▼▼▼ 以下を新しく追加します ▼▼▼
+    # ▼▼▼ カルーセル関連のインポート ▼▼▼
     TemplateSendMessage, CarouselTemplate, CarouselColumn, PostbackAction, PostbackEvent
 )
 from dotenv import load_dotenv
@@ -55,9 +55,6 @@ def create_app(config_class=DevelopmentConfig):
         genai.configure(api_key=GOOGLE_API_KEY)
     else:
         print("警告: .envファイルにGOOGLE_API_KEYが見つかりません。AI機能は無効になります。")
-
-    # linebotのハンドラーをグローバルスコープで定義
-    handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET', 'YOUR_DEFAULT_SECRET'))
 
     @login_manager.user_loader
     def load_user(user_id):
@@ -360,7 +357,6 @@ def create_app(config_class=DevelopmentConfig):
             abort(403)
         return redirect(url_for('manage_example_questions'))
 
-    # ▼▼▼ メニュー管理画面のルートを追加します ▼▼▼
     @app.route('/menu_management', methods=['GET', 'POST'])
     @login_required
     def manage_menu_items():
@@ -399,7 +395,6 @@ def create_app(config_class=DevelopmentConfig):
         else:
             abort(403)
         return redirect(url_for('manage_menu_items'))
-    # ▲▲▲ ここまで追加 ▲▲▲
     
     @app.route('/')
     def index():
@@ -484,11 +479,9 @@ def create_app(config_class=DevelopmentConfig):
             example_questions = customer_data.example_questions.order_by(ExampleQuestion.id.asc()).all()
         return render_template('chatbot_page.html', data=customer_data, example_questions=example_questions)
 
-    # ▼▼▼ get_gemini_response 関数を修正します ▼▼▼
     def get_gemini_response(customer_data, user_message, session_id):
         bot_name = customer_data.bot_name or "アシスタント"
         
-        # お客様が登録したメニュー項目をデータベースから取得
         menu_items = customer_data.menu_items
         menu_knowledge = "\n".join([f"- {item.title}: {item.description}\n  - image_url: {item.image_url}" for item in menu_items])
 
@@ -502,7 +495,7 @@ def create_app(config_class=DevelopmentConfig):
 - わからない場合は、無理に回答せず「申し訳ありませんが、わかりかねます」と正直に伝えてください。
 - 回答の後に、ユーザーが次に尋ねそうな質問やアクションの選択肢がある場合は、`[選択肢1, 選択肢2]` の形式で提示してください。
 - **重要**: ユーザーが「メニュー」について尋ね、ナレッジにメニュー情報が存在する場合、必ず以下の応答フォーマットで回答してください。
-  - 応答フォーマット: `[CAROUSEL] [{{"title":"メニュー名1", "text":"説明1", "image_url":"画像URL1", "action_text":"ボタン1"}}, {{"title":"メニュー名2", ...}}]`
+  - 応答フォーマット: `[CAROUSEL] [{{"title":"{item.title}", "text":"{item.description}", "image_url":"{item.image_url}", "action_text":"{item.action_text}"}} for item in menu_items]`
 
 # ナレッジ
 ## お客様登録メニュー
@@ -543,7 +536,6 @@ def create_app(config_class=DevelopmentConfig):
         except Exception as e:
             print(f"Gemini API Error: {e}")
             return "申し訳ありません、AIとの通信中にエラーが発生しました。"
-    # ▲▲▲ ここまで修正 ▲▲▲
 
     def parse_response_for_quick_reply(text: str) -> (str, list):
         match = re.search(r"\[(.*?)\]\s*$", text)
@@ -581,20 +573,18 @@ def create_app(config_class=DevelopmentConfig):
 
         return jsonify({"answer": answer})
     
+    # ▼▼▼ LINE Webhook関連の処理をここから修正します ▼▼▼
     @app.route("/line-webhook", methods=['POST'])
     def line_webhook():
         signature = request.headers['X-Line-Signature']
         body = request.get_data(as_text=True)
         
-        # このWebhookリクエストがどの顧客のものか判定するロジックが必要
-        # ここでは単純化のため、リクエストボディの内容などから顧客を特定する想定
-        # 今回は暫定的に最初の顧客データを取得
+        # どの顧客からのリクエストかを判定する (暫定的に最初の顧客を取得)
         customer_data = CustomerData.query.first()
         if not customer_data or not customer_data.line_channel_secret:
             abort(400)
-            
+        
         handler = WebhookHandler(customer_data.line_channel_secret)
-
         try:
             handler.handle(body, signature)
         except InvalidSignatureError:
@@ -603,7 +593,6 @@ def create_app(config_class=DevelopmentConfig):
 
     @handler.add(MessageEvent, message=TextMessage)
     def handle_message(event):
-        # どの顧客からのイベントか特定する (line_webhookと同様の課題)
         customer_data = CustomerData.query.first()
         if not customer_data: return
 
@@ -660,7 +649,7 @@ def create_app(config_class=DevelopmentConfig):
             except Exception as e:
                 print(f"カルーセルデータの解析エラー: {e}")
                 message = TextSendMessage(text="申し訳ありません、メニューの表示に失敗しました。")
-        elif customer_data.plan == 'professional':
+        elif customer_data.plan in ['professional', 'trial']:
             main_text, options = parse_response_for_quick_reply(answer_from_ai)
             
             if options:
@@ -699,6 +688,7 @@ def create_app(config_class=DevelopmentConfig):
                 event.reply_token,
                 TextSendMessage(text=reply_text)
             )
+    # ▲▲▲ ここまで修正 ▲▲▲
 
     @app.route('/admin')
     @login_required
