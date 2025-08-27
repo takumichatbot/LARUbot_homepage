@@ -9,15 +9,15 @@
 {% block content %}
 <div class="space-y-8">
     
-    {% if not data.onboarding_completed %}
+    {% if not data.onboarding_completed and not current_user.is_admin %}
     <div class="bg-gradient-to-r from-sky-500 to-indigo-500 text-white p-8 rounded-xl shadow-lg relative">
         <h2 class="text-3xl font-bold mb-2">ようこそ、{{ current_user.email }}さん</h2>
         <p class="mb-6">チャットボットを完成させるための、最初のステップをご紹介します。</p>
-        <div class="flex space-x-4">
+        <div class="flex flex-wrap gap-4">
             <a href="{{ url_for('settings') }}" class="bg-white/30 hover:bg-white/40 text-white font-bold py-2 px-4 rounded-lg transition">1. 見た目をカスタマイズ</a>
             <a href="{{ url_for('qa_management') }}" class="bg-white/30 hover:bg-white/40 text-white font-bold py-2 px-4 rounded-lg transition">2. 知識をチューニング</a>
         </div>
-        <a href="{{ url_for('complete_onboarding') }}" class="absolute top-4 right-4 text-white/70 hover:text-white/100 transition">
+        <a href="{{ url_for('complete_onboarding') }}" class="absolute top-4 right-4 text-white/70 hover:text-white/100 transition" title="このガイドを閉じる">
             <i class="fas fa-times"></i>
             <span class="sr-only">ガイドを閉じる</span>
         </a>
@@ -34,35 +34,45 @@
         </div>
     </div>
     
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <a href="{{ url_for('settings') }}" class="block p-6 bg-white rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all">
             <i class="fas fa-palette text-2xl text-green-500 mb-3"></i>
-            <h3 class="font-bold text-lg text-slate-800">基本設定</h3>
-            <p class="text-slate-600">ボットの名前、色、挨拶メッセージを変更します。</p>
+            <h3 class="font-bold text-lg text-slate-800">カスタマイズ</h3>
+            <p class="text-slate-600 text-sm">ボットの名前、色、挨拶メッセージを変更します。</p>
         </a>
         <a href="{{ url_for('qa_management') }}" class="block p-6 bg-white rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all">
             <i class="fas fa-brain text-2xl text-indigo-500 mb-3"></i>
-            <h3 class="font-bold text-lg text-slate-800">Q&Aチューニング</h3>
-            <p class="text-slate-600">Q&Aを編集してボットを賢く育てます。</p>
+            <h3 class="font-bold text-lg text-slate-800">チューニング</h3>
+            <p class="text-slate-600 text-sm">Q&Aを編集してボットを賢く育てます。</p>
         </a>
-        
+        <a href="{{ url_for('manage_menu_items') }}" class="block p-6 bg-white rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all">
+            <i class="fas fa-utensils text-2xl text-orange-500 mb-3"></i>
+            <h3 class="font-bold text-lg text-slate-800">メニュー管理</h3>
+            <p class="text-slate-600 text-sm">カルーセルに表示するメニューを編集します。</p>
+        </a>
+        <a href="{{ url_for('conversation_logs') }}" class="block p-6 bg-white rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all">
+            <i class="fas fa-history text-2xl text-purple-500 mb-3"></i>
+            <h3 class="font-bold text-lg text-slate-800">会話ログ</h3>
+            <p class="text-slate-600 text-sm">ユーザーとの会話履歴を確認します。</p>
+        </a>
+        <a href="{{ url_for('analysis') }}" class="block p-6 bg-white rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all">
+            <i class="fas fa-chart-pie text-2xl text-red-500 mb-3"></i>
+            <h3 class="font-bold text-lg text-slate-800">会話分析</h3>
+            <p class="text-slate-600 text-sm">AIが答えられなかった質問を確認します。</p>
+        </a>
         {% if data.plan == 'professional' or current_user.is_admin %}
         <a href="{{ url_for('manage_example_questions') }}" class="block p-6 bg-white rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all">
             <i class="fas fa-question-circle text-2xl text-sky-500 mb-3"></i>
             <h3 class="font-bold text-lg text-slate-800">質問例カスタマイズ</h3>
-            <p class="text-slate-600">チャット開始時の質問例を編集します。</p>
+            <p class="text-slate-600 text-sm">チャット開始時の質問例を編集します。</p>
         </a>
         {% else %}
         <div class="block p-6 bg-slate-50 rounded-xl border border-dashed">
             <i class="fas fa-question-circle text-2xl text-slate-400 mb-3"></i>
             <h3 class="font-bold text-lg text-slate-500">質問例カスタマイズ</h3>
-            <p class="text-slate-500">プロフェッショナルプランで利用可能です。</p>
+            <p class="text-slate-500 text-sm">プロフェッショナルプランで利用可能です。</p>
         </div>
-        {% endif %}  <a href="{{ url_for('conversation_logs') }}" class="block p-6 bg-white rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all">
-            <i class="fas fa-history text-2xl text-purple-500 mb-3"></i>
-            <h3 class="font-bold text-lg text-slate-800">会話ログ</h3>
-            <p class="text-slate-600">ユーザーとの会話履歴を確認・分析します。</p>
-        </a>
+        {% endif %}
     </div>
 </div>
 
