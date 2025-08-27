@@ -11,7 +11,7 @@ from flask_mail import Mail, Message
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from flask_migrate import Migrate
-from werkzeug.utils import secure_filename # ▼▼▼ ファイルアップロードに必要 ▼▼▼
+from werkzeug.utils import secure_filename
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import (
@@ -30,10 +30,8 @@ def create_app(config_class=DevelopmentConfig):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
-    # ▼▼▼ アップロードフォルダの設定を新しく追加します ▼▼▼
     app.config['UPLOAD_FOLDER'] = 'static/uploads'
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    # ▲▲▲ ここまで追加 ▲▲▲
 
     db.init_app(app)
     Migrate(app, db)
@@ -361,7 +359,6 @@ def create_app(config_class=DevelopmentConfig):
             abort(403)
         return redirect(url_for('manage_example_questions'))
 
-    # ▼▼▼ manage_menu_items関数を、ファイルアップロード対応版に置き換えます ▼▼▼
     @app.route('/menu_management', methods=['GET', 'POST'])
     @login_required
     def manage_menu_items():
@@ -374,14 +371,11 @@ def create_app(config_class=DevelopmentConfig):
 
             final_image_url = image_url_from_form
 
-            # ファイルがアップロードされた場合の処理
             if image_file and image_file.filename != '':
                 filename = secure_filename(image_file.filename)
-                # ファイル名を一意にするため、タイムスタンプを先頭に追加
                 unique_filename = f"{int(datetime.now().timestamp())}_{filename}"
                 save_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
                 image_file.save(save_path)
-                # 保存したファイルへのURLを生成
                 final_image_url = url_for('static', filename=f'uploads/{unique_filename}', _external=True)
 
             if title and description:
@@ -401,7 +395,6 @@ def create_app(config_class=DevelopmentConfig):
 
         menu_items = MenuItem.query.filter_by(customer_data_id=current_user.customer_data.id).order_by(MenuItem.created_at.desc()).all()
         return render_template('menu_management.html', menu_items=menu_items, user=current_user)
-    # ▲▲▲ ここまで置き換え ▲▲▲
 
     @app.route('/menu/delete/<int:item_id>', methods=['POST'])
     @login_required
@@ -414,6 +407,30 @@ def create_app(config_class=DevelopmentConfig):
         else:
             abort(403)
         return redirect(url_for('manage_menu_items'))
+    
+    # ▼▼▼ 会話分析ページのルートを2つ追加します ▼▼▼
+    @app.route('/analysis')
+    @login_required
+    def analysis():
+        customer_data = current_user.customer_data
+        # bot_answerが'[UNCERTAIN]'で始まるログを検索
+        uncertain_logs = customer_data.logs.filter(ConversationLog.bot_answer.like('[UNCERTAIN]%')).order_by(ConversationLog.timestamp.desc()).all()
+        
+        return render_template('analysis.html', logs=uncertain_logs, user=current_user)
+
+    @app.route('/analysis/delete/<int:log_id>', methods=['POST'])
+    @login_required
+    def delete_log(log_id):
+        log_to_delete = ConversationLog.query.get_or_404(log_id)
+        # ログが現在の顧客のものであることを確認
+        if log_to_delete.customer_data_id == current_user.customer_data.id:
+            db.session.delete(log_to_delete)
+            db.session.commit()
+            flash('ログをリストから削除しました。', 'success')
+        else:
+            abort(403)
+        return redirect(url_for('analysis'))
+    # ▲▲▲ ここまで追加 ▲▲▲
     
     @app.route('/')
     def index():
@@ -498,6 +515,7 @@ def create_app(config_class=DevelopmentConfig):
             example_questions = customer_data.example_questions.order_by(ExampleQuestion.id.asc()).all()
         return render_template('chatbot_page.html', data=customer_data, example_questions=example_questions)
 
+    # ▼▼▼ get_gemini_responseのプロンプトを修正します ▼▼▼
     def get_gemini_response(customer_data, user_message, session_id):
         bot_name = customer_data.bot_name or "アシスタント"
         
@@ -511,7 +529,7 @@ def create_app(config_class=DevelopmentConfig):
 - 簡潔かつ丁寧に回答してください。
 - ナレッジに含まれる情報だけで回答できる場合は、その情報を元に回答してください。
 - ナレッジにない質問でも、一般的なことであればアシスタントとして回答してください。
-- わからない場合は、無理に回答せず「申し訳ありませんが、わかりかねます」と正直に伝えてください。
+- **重要**: わからない場合や答えられない場合は、無理に回答せず、必ず `[UNCERTAIN]` という接頭辞を付けてから「申し訳ありませんが、わかりかねます」のように正直に伝えてください。
 - 回答の後に、ユーザーが次に尋ねそうな質問やアクションの選択肢がある場合は、`[選択肢1, 選択肢2]` の形式で提示してください。
 - **重要**: ユーザーが「メニュー」について尋ね、ナレッジにメニュー情報が存在する場合、必ず以下の応答フォーマットで回答してください。
   - 応答フォーマット: `[CAROUSEL] [{{"title":"メニュー名1", "text":"説明1", "image_url":"画像URL1", "action_text":"ボタン1"}}, {{"title":"メニュー名2", ...}}]`
@@ -555,6 +573,7 @@ def create_app(config_class=DevelopmentConfig):
         except Exception as e:
             print(f"Gemini API Error: {e}")
             return "申し訳ありません、AIとの通信中にエラーが発生しました。"
+    # ▲▲▲ ここまで修正 ▲▲▲
 
     def parse_response_for_quick_reply(text: str) -> (str, list):
         match = re.search(r"\[(.*?)\]\s*$", text)
