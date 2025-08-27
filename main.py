@@ -243,6 +243,17 @@ def create_app(config_class=DevelopmentConfig):
             flash('パスワードが更新されました。ログインしてください。', 'success')
             return redirect(url_for('login'))
         return render_template('reset_token.html', token=token)
+    
+    # ▼▼▼ この関数をまるごと追加します ▼▼▼
+    @app.route('/complete_onboarding')
+    @login_required
+    def complete_onboarding():
+        customer_data = current_user.customer_data
+        if customer_data:
+            customer_data.onboarding_completed = True
+            db.session.commit()
+        return redirect(url_for('dashboard'))
+    # ▲▲▲ ここまで追加 ▲▲▲
 
     @app.route('/dashboard')
     @login_required
@@ -408,12 +419,10 @@ def create_app(config_class=DevelopmentConfig):
             abort(403)
         return redirect(url_for('manage_menu_items'))
     
-    # ▼▼▼ 会話分析ページのルートを2つ追加します ▼▼▼
     @app.route('/analysis')
     @login_required
     def analysis():
         customer_data = current_user.customer_data
-        # bot_answerが'[UNCERTAIN]'で始まるログを検索
         uncertain_logs = customer_data.logs.filter(ConversationLog.bot_answer.like('[UNCERTAIN]%')).order_by(ConversationLog.timestamp.desc()).all()
         
         return render_template('analysis.html', logs=uncertain_logs, user=current_user)
@@ -422,7 +431,6 @@ def create_app(config_class=DevelopmentConfig):
     @login_required
     def delete_log(log_id):
         log_to_delete = ConversationLog.query.get_or_404(log_id)
-        # ログが現在の顧客のものであることを確認
         if log_to_delete.customer_data_id == current_user.customer_data.id:
             db.session.delete(log_to_delete)
             db.session.commit()
@@ -430,7 +438,6 @@ def create_app(config_class=DevelopmentConfig):
         else:
             abort(403)
         return redirect(url_for('analysis'))
-    # ▲▲▲ ここまで追加 ▲▲▲
     
     @app.route('/')
     def index():
@@ -515,7 +522,6 @@ def create_app(config_class=DevelopmentConfig):
             example_questions = customer_data.example_questions.order_by(ExampleQuestion.id.asc()).all()
         return render_template('chatbot_page.html', data=customer_data, example_questions=example_questions)
 
-    # ▼▼▼ get_gemini_responseのプロンプトを修正します ▼▼▼
     def get_gemini_response(customer_data, user_message, session_id):
         bot_name = customer_data.bot_name or "アシスタント"
         
@@ -573,7 +579,6 @@ def create_app(config_class=DevelopmentConfig):
         except Exception as e:
             print(f"Gemini API Error: {e}")
             return "申し訳ありません、AIとの通信中にエラーが発生しました。"
-    # ▲▲▲ ここまで修正 ▲▲▲
 
     def parse_response_for_quick_reply(text: str) -> (str, list):
         match = re.search(r"\[(.*?)\]\s*$", text)
