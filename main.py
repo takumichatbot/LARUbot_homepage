@@ -11,6 +11,7 @@ from flask_mail import Mail, Message
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from flask_migrate import Migrate
+from werkzeug.utils import secure_filename # ▼▼▼ ファイルアップロードに必要 ▼▼▼
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import (
@@ -28,6 +29,11 @@ load_dotenv()
 def create_app(config_class=DevelopmentConfig):
     app = Flask(__name__)
     app.config.from_object(config_class)
+
+    # ▼▼▼ アップロードフォルダの設定を新しく追加します ▼▼▼
+    app.config['UPLOAD_FOLDER'] = 'static/uploads'
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    # ▲▲▲ ここまで追加 ▲▲▲
 
     db.init_app(app)
     Migrate(app, db)
@@ -355,20 +361,34 @@ def create_app(config_class=DevelopmentConfig):
             abort(403)
         return redirect(url_for('manage_example_questions'))
 
+    # ▼▼▼ manage_menu_items関数を、ファイルアップロード対応版に置き換えます ▼▼▼
     @app.route('/menu_management', methods=['GET', 'POST'])
     @login_required
     def manage_menu_items():
         if request.method == 'POST':
             title = request.form.get('title')
             description = request.form.get('description')
-            image_url = request.form.get('image_url')
+            image_url_from_form = request.form.get('image_url')
             action_text = request.form.get('action_text', 'これにする')
+            image_file = request.files.get('image_file')
+
+            final_image_url = image_url_from_form
+
+            # ファイルがアップロードされた場合の処理
+            if image_file and image_file.filename != '':
+                filename = secure_filename(image_file.filename)
+                # ファイル名を一意にするため、タイムスタンプを先頭に追加
+                unique_filename = f"{int(datetime.now().timestamp())}_{filename}"
+                save_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+                image_file.save(save_path)
+                # 保存したファイルへのURLを生成
+                final_image_url = url_for('static', filename=f'uploads/{unique_filename}', _external=True)
 
             if title and description:
                 new_item = MenuItem(
                     title=title,
                     description=description,
-                    image_url=image_url,
+                    image_url=final_image_url,
                     action_text=action_text,
                     customer_data_id=current_user.customer_data.id
                 )
@@ -381,6 +401,7 @@ def create_app(config_class=DevelopmentConfig):
 
         menu_items = MenuItem.query.filter_by(customer_data_id=current_user.customer_data.id).order_by(MenuItem.created_at.desc()).all()
         return render_template('menu_management.html', menu_items=menu_items, user=current_user)
+    # ▲▲▲ ここまで置き換え ▲▲▲
 
     @app.route('/menu/delete/<int:item_id>', methods=['POST'])
     @login_required
@@ -571,14 +592,11 @@ def create_app(config_class=DevelopmentConfig):
 
         return jsonify({"answer": answer})
     
-    # ▼▼▼ LINE Webhook関連の処理をここから修正します ▼▼▼
     @app.route("/line-webhook", methods=['POST'])
     def line_webhook():
         signature = request.headers['X-Line-Signature']
         body = request.get_data(as_text=True)
         
-        # どの顧客からのリクエストかを判定する
-        # ここではすべての顧客のシークレットを試す
         all_customers = CustomerData.query.filter(CustomerData.line_channel_secret.isnot(None)).all()
         for customer in all_customers:
             handler = WebhookHandler(customer.line_channel_secret)
@@ -589,15 +607,12 @@ def create_app(config_class=DevelopmentConfig):
                         handle_message(event, customer)
                     elif isinstance(event, PostbackEvent):
                         handle_postback(event, customer)
-                return 'OK' # 署名が一致したので処理終了
+                return 'OK'
             except InvalidSignatureError:
-                continue # 署名が不一致なら次の顧客のシークレットで試す
+                continue
         
-        abort(400) # どの顧客のシークレットとも一致しなかった
+        abort(400)
 
-    # handle_messageとhandle_postbackから@handler.addデコレータを削除し、
-    # 引数に customer_data を追加します。
-    
     def handle_message(event, customer_data):
         user_message = event.message.text
         line_bot_api = LineBotApi(customer_data.line_channel_token)
@@ -652,8 +667,7 @@ def create_app(config_class=DevelopmentConfig):
             except Exception as e:
                 print(f"カルーセルデータの解析エラー: {e}")
                 message = TextSendMessage(text="申し訳ありません、メニューの表示に失敗しました。")
-
-        elif customer_data.plan in ['professional', 'trial'] or current_user.is_admin:
+        elif customer_data.plan in ['professional', 'trial'] or (hasattr(current_user, 'is_admin') and current_user.is_admin):
             main_text, options = parse_response_for_quick_reply(answer_from_ai)
             
             if options:
@@ -687,7 +701,6 @@ def create_app(config_class=DevelopmentConfig):
                 event.reply_token,
                 TextSendMessage(text=reply_text)
             )
-    # ▲▲▲ ここまで修正 ▲▲▲
 
     @app.route('/admin')
     @login_required

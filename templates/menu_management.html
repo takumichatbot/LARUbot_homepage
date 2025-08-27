@@ -10,7 +10,8 @@
 <div class="space-y-8">
     <div class="bg-white p-6 rounded-xl shadow-md">
         <h2 class="text-lg font-bold mb-4 text-slate-800">新しいメニュー項目を追加</h2>
-        <form action="{{ url_for('manage_menu_items') }}" method="POST" class="space-y-4">
+        
+        <form action="{{ url_for('manage_menu_items') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
             <div>
                 <label for="title" class="block text-sm font-medium text-gray-700">タイトル (必須)</label>
                 <input type="text" name="title" id="title" required class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
@@ -19,8 +20,14 @@
                 <label for="description" class="block text-sm font-medium text-gray-700">説明 (必須)</label>
                 <textarea name="description" id="description" rows="3" required class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"></textarea>
             </div>
+            
             <div>
-                <label for="image_url" class="block text-sm font-medium text-gray-700">画像URL (任意)</label>
+                <label for="image_file" class="block text-sm font-medium text-gray-700">画像ファイルを選択 (任意)</label>
+                <input type="file" name="image_file" id="image_file" accept="image/png, image/jpeg" class="mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100">
+                <p class="mt-1 text-xs text-gray-500">または、以下の欄に画像のURLを直接入力してください。</p>
+            </div>
+            <div>
+                <label for="image_url" class="block text-sm font-medium text-gray-700">画像URLを直接入力 (任意)</label>
                 <input type="url" name="image_url" id="image_url" placeholder="https://example.com/image.jpg" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
             </div>
             <div>
@@ -34,34 +41,6 @@
     </div>
 
     <div class="bg-white p-6 rounded-xl shadow-md">
-        <h2 class="text-lg font-bold mb-4 text-slate-800">登録済みメニュー</h2>
-        {% if menu_items %}
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {% for item in menu_items %}
-                <div class="border rounded-lg overflow-hidden shadow">
-                    {% if item.image_url %}
-                        <img src="{{ item.image_url }}" alt="{{ item.title }}" class="h-40 w-full object-cover">
-                    {% else %}
-                        <div class="h-40 w-full bg-slate-200 flex items-center justify-center">
-                            <i class="fas fa-image text-4xl text-slate-400"></i>
-                        </div>
-                    {% endif %}
-                    <div class="p-4">
-                        <h3 class="font-bold text-lg">{{ item.title }}</h3>
-                        <p class="text-sm text-gray-600 mt-1 mb-3">{{ item.description }}</p>
-                        <p class="text-xs text-gray-500">ボタン: 「{{ item.action_text }}」</p>
-                        <form action="{{ url_for('delete_menu_item', item_id=item.id) }}" method="POST" onsubmit="return confirm('本当にこの項目を削除しますか？');" class="mt-4">
-                            <button type="submit" class="w-full text-sm text-red-600 hover:text-red-800">
-                                <i class="fas fa-trash-alt mr-1"></i> 削除
-                            </button>
-                        </form>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        {% else %}
-            <p class="text-gray-500">まだメニュー項目が登録されていません。</p>
-        {% endif %}
-    </div>
+        </div>
 </div>
 {% endblock %}
