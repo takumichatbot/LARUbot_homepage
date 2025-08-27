@@ -472,8 +472,13 @@ def create_app(config_class=DevelopmentConfig):
     
     @app.route('/')
     def index():
-        return render_template('index.html')
-    
+        stripe_starter_price_id = os.getenv('STRIPE_STARTER_PRICE_ID')
+        stripe_pro_price_id = os.getenv('STRIPE_PRO_PRICE_ID')
+        return render_template(
+        'index.html', 
+        stripe_starter_price_id=stripe_starter_price_id,
+        stripe_pro_price_id=stripe_pro_price_id
+    )
     @app.route('/terms')
     def terms_of_service():
         return render_template('terms.html')

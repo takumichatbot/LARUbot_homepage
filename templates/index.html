@@ -109,9 +109,9 @@
                         <li class="flex items-start"><i class="fas fa-check-circle text-emerald-500 mr-3 mt-1"></i><span>カルーセルメニュー登録 (上限3件)</span></li>
                         <li class="flex items-start"><i class="fas fa-check-circle text-emerald-500 mr-3 mt-1"></i><span>質問例登録 (上限5件)</span></li>
                         <li class="flex items-start"><i class="fas fa-check-circle text-emerald-500 mr-3 mt-1"></i><span>会話ログ閲覧 (過去7日分)</span></li>
-                        </ul>
+                    </ul>
                     <form action="{{ url_for('create_checkout_session') }}" method="POST" class="mt-auto">
-                        <input type="hidden" name="price_id" value="{{ os.getenv('STRIPE_STARTER_PRICE_ID') }}">
+                        <input type="hidden" name="price_id" value="{{ stripe_starter_price_id }}">
                         <button type="submit" class="w-full text-center bg-slate-200 text-slate-800 font-bold py-3 px-6 rounded-full hover:bg-slate-300 transition-colors">このプランで始める</button>
                     </form>
                 </div>
@@ -129,10 +129,10 @@
                         <li class="flex items-start"><i class="fas fa-check-circle text-sky-500 mr-3 mt-1"></i><span>**会話ログ分析機能**</span></li>
                         <li class="flex items-start"><i class="fas fa-check-circle text-sky-500 mr-3 mt-1"></i><span>**週次レポートメール機能**</span></li>
                         <li class="flex items-start"><i class="fas fa-check-circle text-sky-500 mr-3 mt-1"></i><span>「Powered by LARUbot」ロゴ非表示</span></li>
-                        <li class="flex items-start"><i class="fas fa-check-circle text-sky-500 mr-3 mt-1"></i><span><b>優先メールサポート</b></span></li>
-                        </ul>
+                        <li class="flex items-start"><i class="fas fa-check-circle text-sky-500 mr-3 mt-1"></i><span>優先メールサポート</span></li>
+                    </ul>
                     <form action="{{ url_for('create_checkout_session') }}" method="POST" class="mt-auto">
-                        <input type="hidden" name="price_id" value="{{ os.getenv('STRIPE_PRO_PRICE_ID') }}">
+                        <input type="hidden" name="price_id" value="{{ stripe_pro_price_id }}">
                         <button type="submit" class="w-full text-center bg-sky-500 text-white font-bold py-3 px-6 rounded-full hover:bg-sky-600 transition-colors shadow-lg">このプランで始める</button>
                     </form>
                 </div>
@@ -156,7 +156,7 @@
                     <h3 class="faq-question font-bold text-lg flex justify-between items-center"><span>サポート体制について教えてください。</span><i class="fas fa-chevron-down transition-transform"></i></h3>
                     <div class="faq-answer text-slate-600 pt-2"><p>プロフェッショナルプランでは、専任の担当者がメールでの技術サポートや、会話ログの分析・改善提案など、成果を出すためのプロアクティブな支援を行います。スタータープランのお客様は、FAQやガイドをご利用いただけます。</p></div>
                 </div>
-                </div>
+            </div>
         </div>
     </section>
 
