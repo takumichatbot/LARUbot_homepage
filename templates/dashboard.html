@@ -17,13 +17,13 @@
             <a href="{{ url_for('settings') }}" class="bg-white/30 hover:bg-white/40 text-white font-bold py-2 px-4 rounded-lg transition">1. 見た目をカスタマイズ</a>
             <a href="{{ url_for('qa_management') }}" class="bg-white/30 hover:bg-white/40 text-white font-bold py-2 px-4 rounded-lg transition">2. 知識をチューニング</a>
         </div>
-        
         <a href="{{ url_for('complete_onboarding') }}" class="absolute top-4 right-4 text-white/70 hover:text-white/100 transition">
             <i class="fas fa-times"></i>
             <span class="sr-only">ガイドを閉じる</span>
         </a>
     </div>
     {% endif %}
+
     <div class="bg-white p-6 rounded-xl shadow-md">
         <h3 class="font-bold text-lg mb-4 text-slate-800">あなたのチャットボット</h3>
         <p class="mb-2 text-slate-600">以下のURLをサイトに埋め込むか、直接アクセスしてチャットボットをテストできます。</p>
@@ -47,4 +47,31 @@
         </a>
         
         {% if data.plan == 'professional' or current_user.is_admin %}
-        <a href="{{ url_for('manage_example_questions') }}" class="block p-6 bg-white rounded-xl shadow-
+        <a href="{{ url_for('manage_example_questions') }}" class="block p-6 bg-white rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all">
+            <i class="fas fa-question-circle text-2xl text-sky-500 mb-3"></i>
+            <h3 class="font-bold text-lg text-slate-800">質問例カスタマイズ</h3>
+            <p class="text-slate-600">チャット開始時の質問例を編集します。</p>
+        </a>
+        {% else %}
+        <div class="block p-6 bg-slate-50 rounded-xl border border-dashed">
+            <i class="fas fa-question-circle text-2xl text-slate-400 mb-3"></i>
+            <h3 class="font-bold text-lg text-slate-500">質問例カスタマイズ</h3>
+            <p class="text-slate-500">プロフェッショナルプランで利用可能です。</p>
+        </div>
+        {% endif %}  <a href="{{ url_for('conversation_logs') }}" class="block p-6 bg-white rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all">
+            <i class="fas fa-history text-2xl text-purple-500 mb-3"></i>
+            <h3 class="font-bold text-lg text-slate-800">会話ログ</h3>
+            <p class="text-slate-600">ユーザーとの会話履歴を確認・分析します。</p>
+        </a>
+    </div>
+</div>
+
+<script>
+    function copyUrl() {
+        const urlInput = document.getElementById('chatbot-url');
+        urlInput.select();
+        document.execCommand('copy');
+        alert('URLをコピーしました！');
+    }
+</script>
+{% endblock %}
