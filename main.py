@@ -244,7 +244,6 @@ def create_app(config_class=DevelopmentConfig):
             return redirect(url_for('login'))
         return render_template('reset_token.html', token=token)
     
-    # ▼▼▼ この関数をまるごと追加します ▼▼▼
     @app.route('/complete_onboarding')
     @login_required
     def complete_onboarding():
@@ -253,7 +252,6 @@ def create_app(config_class=DevelopmentConfig):
             customer_data.onboarding_completed = True
             db.session.commit()
         return redirect(url_for('dashboard'))
-    # ▲▲▲ ここまで追加 ▲▲▲
 
     @app.route('/dashboard')
     @login_required
@@ -280,6 +278,8 @@ def create_app(config_class=DevelopmentConfig):
             customer_data.header_color = request.form.get('header_color', '#0ea5e9')
             customer_data.line_channel_token = request.form.get('line_channel_token', '').strip()
             customer_data.line_channel_secret = request.form.get('line_channel_secret', '').strip()
+            customer_data.enable_weekly_report = 'enable_weekly_report' in request.form
+            customer_data.report_day_of_week = int(request.form.get('report_day_of_week', 1))
             db.session.commit()
             flash('設定を保存しました！', 'success')
             return redirect(url_for('settings'))
@@ -419,12 +419,12 @@ def create_app(config_class=DevelopmentConfig):
             abort(403)
         return redirect(url_for('manage_menu_items'))
     
+    # ▼▼▼ 会話分析ページのルートを2つ追加します ▼▼▼
     @app.route('/analysis')
     @login_required
     def analysis():
         customer_data = current_user.customer_data
         uncertain_logs = customer_data.logs.filter(ConversationLog.bot_answer.like('[UNCERTAIN]%')).order_by(ConversationLog.timestamp.desc()).all()
-        
         return render_template('analysis.html', logs=uncertain_logs, user=current_user)
 
     @app.route('/analysis/delete/<int:log_id>', methods=['POST'])
@@ -438,6 +438,7 @@ def create_app(config_class=DevelopmentConfig):
         else:
             abort(403)
         return redirect(url_for('analysis'))
+    # ▲▲▲ ここまで追加 ▲▲▲
     
     @app.route('/')
     def index():
@@ -522,6 +523,7 @@ def create_app(config_class=DevelopmentConfig):
             example_questions = customer_data.example_questions.order_by(ExampleQuestion.id.asc()).all()
         return render_template('chatbot_page.html', data=customer_data, example_questions=example_questions)
 
+    # ▼▼▼ get_gemini_responseのプロンプトを修正します ▼▼▼
     def get_gemini_response(customer_data, user_message, session_id):
         bot_name = customer_data.bot_name or "アシスタント"
         
@@ -533,12 +535,16 @@ def create_app(config_class=DevelopmentConfig):
 
 # 制約条件
 - 簡潔かつ丁寧に回答してください。
+- **重要**: これまでの会話履歴を考慮し、文脈を維持してください。例えば、ユーザーが名前を名乗った場合は、以降の応答で「〇〇様」のようにその名前を使って呼びかけてください。
 - ナレッジに含まれる情報だけで回答できる場合は、その情報を元に回答してください。
 - ナレッジにない質問でも、一般的なことであればアシスタントとして回答してください。
-- **重要**: わからない場合や答えられない場合は、無理に回答せず、必ず `[UNCERTAIN]` という接頭辞を付けてから「申し訳ありませんが、わかりかねます」のように正直に伝えてください。
+- わからない場合や答えられない場合は、無理に回答せず、必ず `[UNCERTAIN]` という接頭辞を付けてから「申し訳ありませんが、わかりかねます」のように正直に伝えてください。
 - 回答の後に、ユーザーが次に尋ねそうな質問やアクションの選択肢がある場合は、`[選択肢1, 選択肢2]` の形式で提示してください。
-- **重要**: ユーザーが「メニュー」について尋ね、ナレッジにメニュー情報が存在する場合、必ず以下の応答フォーマットで回答してください。
-  - 応答フォーマット: `[CAROUSEL] [{{"title":"メニュー名1", "text":"説明1", "image_url":"画像URL1", "action_text":"ボタン1"}}, {{"title":"メニュー名2", ...}}]`
+- ユーザーが「メニュー」について尋ね、ナレッジにメニュー情報が存在する場合、必ず `[CAROUSEL]` フォーマットで回答してください。
+
+# 会話の具体例
+- ユーザー: 「予約をお願いします。田中です。」
+- あなた: 「田中様、ご予約ですね。どのメニューになさいますか？」
 
 # ナレッジ
 ## お客様登録メニュー
@@ -579,6 +585,7 @@ def create_app(config_class=DevelopmentConfig):
         except Exception as e:
             print(f"Gemini API Error: {e}")
             return "申し訳ありません、AIとの通信中にエラーが発生しました。"
+    # ▲▲▲ ここまで修正 ▲▲▲
 
     def parse_response_for_quick_reply(text: str) -> (str, list):
         match = re.search(r"\[(.*?)\]\s*$", text)
@@ -763,6 +770,52 @@ def change_plan_command():
             print("Invalid plan.")
     else:
         print(f"Error: User {email} not found.")
+
+def send_weekly_reports():
+    """全顧客に週次レポートを送信する"""
+    with app.app_context():
+        today = datetime.utcnow()
+        last_week = today - timedelta(days=7)
+        
+        users = User.query.filter_by(is_admin=False).all()
+        
+        for user in users:
+            customer_data = user.customer_data
+            if not customer_data:
+                continue
+
+            logs = customer_data.logs.filter(
+                ConversationLog.timestamp >= last_week,
+                ConversationLog.timestamp < today
+            ).all()
+
+            conversation_count = len(logs)
+            uncertain_count = sum(1 for log in logs if log.bot_answer.startswith('[UNCERTAIN]'))
+            
+            html_body = render_template(
+                'report_email.html',
+                user=user,
+                start_date=last_week.strftime('%Y/%m/%d'),
+                end_date=today.strftime('%Y/%m/%d'),
+                conversation_count=conversation_count,
+                uncertain_count=uncertain_count
+            )
+            
+            msg = Message(
+                subject='LARUbot 週次レポート',
+                recipients=[user.email],
+                html=html_body,
+                sender=current_app.config['MAIL_DEFAULT_SENDER']
+            )
+            mail.send(msg)
+            print(f"Sent weekly report to {user.email}")
+
+@app.cli.command("send-reports")
+def send_reports_command():
+    """週次レポートメールを送信するためのCLIコマンド"""
+    print("Sending weekly reports...")
+    send_weekly_reports()
+    print("Done.")
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5005, debug=True)

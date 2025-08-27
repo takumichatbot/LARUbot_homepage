@@ -3,14 +3,12 @@
 {% block title %}カスタマイズ - {{ super() }}{% endblock %}
 
 {% block page_header %}
-    <a href="{{ url_for('dashboard') }}" class="text-slate-500 hover:text-sky-600 mr-4" title="ダッシュボードに戻る">
-        <i class="fas fa-arrow-left"></i>
-    </a>
     <h1 class="text-xl font-semibold text-slate-800">チャットボット設定</h1>
 {% endblock %}
 
 {% block content %}
 <style>
+    /* ツールチップのためのCSS */
     .tooltip-container {
         position: relative;
         display: inline-flex;
@@ -38,7 +36,7 @@
         transition: opacity 0.3s;
         font-size: 0.875rem;
         line-height: 1.25rem;
-        font-weight: normal; /* ラベルの太さを継承しないように */
+        font-weight: normal;
     }
     .tooltip-text::after {
         content: "";
@@ -62,21 +60,37 @@
             <div class="mb-8">
                 <h3 class="text-xl font-bold mb-4 text-slate-800 border-b pb-2">基本設定</h3>
                 <div class="mb-6">
-                    <label for="bot_name" class="block text-slate-700 text-sm font-bold mb-2">ボットの名前:</label>
+                    <label for="bot_name" class="block text-slate-700 text-sm font-bold mb-2">
+                        <div class="tooltip-container">
+                            <span>ボットの名前</span>
+                            <i class="fas fa-question-circle tooltip-icon"></i>
+                            <span class="tooltip-text">チャット画面のヘッダーや、AIの自己紹介で使われる名前です。</span>
+                        </div>
+                    </label>
                     <input type="text" id="bot_name" name="bot_name" value="{{ data.bot_name }}" class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-sky-500">
-                    <p class="text-slate-500 text-xs mt-1">チャットウィンドウのヘッダーに表示されます。</p>
                 </div>
                 <div>
-                    <label for="welcome_message" class="block text-slate-700 text-sm font-bold mb-2">歓迎メッセージ:</label>
+                    <label for="welcome_message" class="block text-slate-700 text-sm font-bold mb-2">
+                        <div class="tooltip-container">
+                            <span>歓迎メッセージ</span>
+                            <i class="fas fa-question-circle tooltip-icon"></i>
+                            <span class="tooltip-text">ユーザーがチャットを開始した時に、最初に表示されるメッセージです。</span>
+                        </div>
+                    </label>
                     <textarea id="welcome_message" name="welcome_message" rows="4" class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-sky-500">{{ data.welcome_message }}</textarea>
-                    <p class="text-slate-500 text-xs mt-1">チャットを開いたときに最初に表示されるメッセージです。</p>
                 </div>
             </div>
 
             <div>
                 <h3 class="text-xl font-bold mb-4 text-slate-800 border-b pb-2">デザイン設定</h3>
                 <div class="mb-6">
-                    <label for="header_color" class="block text-slate-700 text-sm font-bold mb-2">ヘッダーの色:</label>
+                    <label for="header_color" class="block text-slate-700 text-sm font-bold mb-2">
+                        <div class="tooltip-container">
+                            <span>ヘッダーの色</span>
+                            <i class="fas fa-question-circle tooltip-icon"></i>
+                            <span class="tooltip-text">Webチャット画面の上部の色を選択します。</span>
+                        </div>
+                    </label>
                     <div class="flex items-center">
                         <input type="color" id="header_color" name="header_color" value="{{ data.header_color }}" class="h-10 w-10 p-1 border rounded-lg cursor-pointer">
                         <input type="text" id="color-code-text" value="{{ data.header_color }}" class="ml-3 font-mono text-slate-700 w-24 border-b">
@@ -111,6 +125,35 @@
                         </div>
                     </label>
                     <input type="password" id="line_channel_secret" name="line_channel_secret" value="{{ data.line_channel_secret or '' }}" class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-sky-500">
+                </div>
+            </div>
+
+            <div class="mt-8 border-t pt-8">
+                <h3 class="text-xl font-bold mb-4 text-slate-800 border-b pb-2">通知設定</h3>
+                <div class="mb-6">
+                    <label class="flex items-center space-x-3 cursor-pointer">
+                        <input type="checkbox" name="enable_weekly_report" value="true" {% if data.enable_weekly_report %}checked{% endif %} class="h-5 w-5 text-sky-600 border-gray-300 rounded focus:ring-sky-500">
+                        <span class="text-slate-700 font-medium">週次レポートメールを有効にする</span>
+                    </label>
+                </div>
+                
+                <div>
+                    <label for="report_day_of_week" class="block text-slate-700 text-sm font-bold mb-2">
+                        <div class="tooltip-container">
+                            <span>レポートを受信する曜日</span>
+                            <i class="fas fa-question-circle tooltip-icon"></i>
+                            <span class="tooltip-text">毎週指定した曜日に、チャットボットの利用状況レポートがメールで届きます。</span>
+                        </div>
+                    </label>
+                    <select id="report_day_of_week" name="report_day_of_week" class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        <option value="0" {% if data.report_day_of_week == 0 %}selected{% endif %}>日曜日</option>
+                        <option value="1" {% if data.report_day_of_week == 1 %}selected{% endif %}>月曜日</option>
+                        <option value="2" {% if data.report_day_of_week == 2 %}selected{% endif %}>火曜日</option>
+                        <option value="3" {% if data.report_day_of_week == 3 %}selected{% endif %}>水曜日</option>
+                        <option value="4" {% if data.report_day_of_week == 4 %}selected{% endif %}>木曜日</option>
+                        <option value="5" {% if data.report_day_of_week == 5 %}selected{% endif %}>金曜日</option>
+                        <option value="6" {% if data.report_day_of_week == 6 %}selected{% endif %}>土曜日</option>
+                    </select>
                 </div>
             </div>
             <div class="mt-8 text-right">
