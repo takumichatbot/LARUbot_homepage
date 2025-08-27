@@ -111,6 +111,11 @@ def create_app(config_class=DevelopmentConfig):
 {url_for('confirm_email', token=token, _external=True)}
 '''
         mail.send(msg)
+
+    def convert_urls_to_links(text):
+        """テキスト内のURLをHTMLのaタグに変換する"""
+        url_pattern = re.compile(r'(https?://[^\s]+)')
+        return url_pattern.sub(r'<a href="\g<0>" target="_blank" class="text-sky-600 hover:underline">\g<0></a>', text)
     
     @app.route('/login', methods=['GET', 'POST'])
     def login():
@@ -275,11 +280,10 @@ def create_app(config_class=DevelopmentConfig):
         if request.method == 'POST':
             customer_data.bot_name = request.form.get('bot_name', 'My Chatbot').strip()[:100]
             customer_data.welcome_message = request.form.get('welcome_message', 'こんにちは！').strip()[:500]
+            customer_data.uncertain_reply = request.form.get('uncertain_reply', '申し訳ありませんが、わかりかねます。').strip()[:500]
             customer_data.header_color = request.form.get('header_color', '#0ea5e9')
             customer_data.line_channel_token = request.form.get('line_channel_token', '').strip()
             customer_data.line_channel_secret = request.form.get('line_channel_secret', '').strip()
-            customer_data.enable_weekly_report = 'enable_weekly_report' in request.form
-            customer_data.report_day_of_week = int(request.form.get('report_day_of_week', 1))
             customer_data.enable_weekly_report = 'enable_weekly_report' in request.form
             customer_data.report_day_of_week = int(request.form.get('report_day_of_week', 1))
             db.session.commit()
@@ -293,14 +297,19 @@ def create_app(config_class=DevelopmentConfig):
         qas = current_user.customer_data.qas.order_by(QA.id.desc()).all()
         return render_template('qa_management.html', qas=qas, user=current_user)
 
+    # ▼▼▼ add_qa関数に制限ロジックを追加します ▼▼▼
     @app.route('/qa/add', methods=['POST'])
     @login_required
     def add_qa():
         customer_data = current_user.customer_data
+        
+        # 管理者(is_admin)ではなく、プロフェッショナルプランでもない場合
         if not current_user.is_admin and customer_data.plan != 'professional':
+            # 現在のQ&A登録数が100件以上の場合
             if customer_data.qas.count() >= 100:
-                flash('無料プラン・トライアル中のQ&A登録上限数（100件）に達しました。', 'warning')
+                flash('スタータープランのQ&A登録上限数（100件）に達しました。無制限に登録するには、プロフェッショナルプランへのアップグレードをご検討ください。', 'warning')
                 return redirect(url_for('qa_management'))
+                
         question = request.form.get('question', '').strip()
         answer = request.form.get('answer', '').strip()
         if question and answer:
@@ -312,6 +321,7 @@ def create_app(config_class=DevelopmentConfig):
         else:
             flash('質問と回答の両方を入力してください。', 'danger')
         return redirect(url_for('qa_management'))
+    # ▲▲▲ ここまで修正 ▲▲▲
 
     @app.route('/qa/delete/<int:qa_id>', methods=['POST'])
     @login_required
@@ -344,20 +354,31 @@ def create_app(config_class=DevelopmentConfig):
         questions = current_user.customer_data.example_questions.order_by(ExampleQuestion.id.asc()).all()
         return render_template('example_questions.html', example_questions=questions, user=current_user)
 
+    # ▼▼▼ add_example_question関数に制限ロジックを追加します ▼▼▼
     @app.route('/example-questions/add', methods=['POST'])
     @login_required
     @professional_plan_required
     def add_example_question():
+        customer_data = current_user.customer_data
+        
+        if not current_user.is_admin and customer_data.plan != 'professional':
+            if customer_data.example_questions.count() >= 5:
+                flash('スタータープランの質問例登録上限数（5件）に達しました。', 'warning')
+                return redirect(url_for('manage_example_questions'))
+                
         text = request.form.get('text', '').strip()
-        if current_user.customer_data.example_questions.count() >= 10:
-            flash('質問例は最大10個まで登録できます。', 'warning')
-            return redirect(url_for('manage_example_questions'))
         if text:
+            # 既存の登録上限チェックはプロフェッショナルプラン向けに残す
+            if customer_data.plan == 'professional' and customer_data.example_questions.count() >= 10:
+                 flash('質問例は最大10個まで登録できます。', 'warning')
+                 return redirect(url_for('manage_example_questions'))
+                 
             new_eq = ExampleQuestion(text=text, customer_data=current_user.customer_data)
             db.session.add(new_eq)
             db.session.commit()
             flash('新しい質問例を追加しました。', 'success')
         return redirect(url_for('manage_example_questions'))
+    # ▲▲▲ ここまで修正 ▲▲▲
 
     @app.route('/example-questions/delete/<int:eq_id>', methods=['POST'])
     @login_required
@@ -372,10 +393,18 @@ def create_app(config_class=DevelopmentConfig):
             abort(403)
         return redirect(url_for('manage_example_questions'))
 
+    # ▼▼▼ manage_menu_items関数に制限ロジックを追加します ▼▼▼
     @app.route('/menu_management', methods=['GET', 'POST'])
     @login_required
     def manage_menu_items():
+        customer_data = current_user.customer_data # 先に定義
+
         if request.method == 'POST':
+            if not current_user.is_admin and customer_data.plan != 'professional':
+                if len(customer_data.menu_items) >= 3:
+                    flash('スタータープランのメニュー登録上限数（3件）に達しました。', 'warning')
+                    return redirect(url_for('manage_menu_items'))
+
             title = request.form.get('title')
             description = request.form.get('description')
             image_url_from_form = request.form.get('image_url')
@@ -406,8 +435,9 @@ def create_app(config_class=DevelopmentConfig):
                 flash('タイトルと説明は必須です。', 'danger')
             return redirect(url_for('manage_menu_items'))
 
-        menu_items = MenuItem.query.filter_by(customer_data_id=current_user.customer_data.id).order_by(MenuItem.created_at.desc()).all()
+        menu_items = MenuItem.query.filter_by(customer_data_id=customer_data.id).order_by(MenuItem.created_at.desc()).all()
         return render_template('menu_management.html', menu_items=menu_items, user=current_user)
+    # ▲▲▲ ここまで修正 ▲▲▲
 
     @app.route('/menu/delete/<int:item_id>', methods=['POST'])
     @login_required
@@ -421,7 +451,6 @@ def create_app(config_class=DevelopmentConfig):
             abort(403)
         return redirect(url_for('manage_menu_items'))
     
-    # ▼▼▼ 会話分析ページのルートを2つ追加します ▼▼▼
     @app.route('/analysis')
     @login_required
     def analysis():
@@ -440,7 +469,6 @@ def create_app(config_class=DevelopmentConfig):
         else:
             abort(403)
         return redirect(url_for('analysis'))
-    # ▲▲▲ ここまで追加 ▲▲▲
     
     @app.route('/')
     def index():
@@ -525,12 +553,13 @@ def create_app(config_class=DevelopmentConfig):
             example_questions = customer_data.example_questions.order_by(ExampleQuestion.id.asc()).all()
         return render_template('chatbot_page.html', data=customer_data, example_questions=example_questions)
 
-    # ▼▼▼ get_gemini_responseのプロンプトを修正します ▼▼▼
     def get_gemini_response(customer_data, user_message, session_id):
         bot_name = customer_data.bot_name or "アシスタント"
         
         menu_items = customer_data.menu_items
         menu_knowledge = "\n".join([f"- {item.title}: {item.description}\n  - image_url: {item.image_url}" for item in menu_items])
+
+        uncertain_reply_text = customer_data.uncertain_reply or '申し訳ありませんが、わかりかねます。'
 
         system_prompt = f"""あなたは「{bot_name}」という名前の優秀なアシスタントです。
 以下の制約条件とナレッジを厳密に守って、ユーザーの質問に回答してください。
@@ -540,7 +569,7 @@ def create_app(config_class=DevelopmentConfig):
 - **重要**: これまでの会話履歴を考慮し、文脈を維持してください。例えば、ユーザーが名前を名乗った場合は、以降の応答で「〇〇様」のようにその名前を使って呼びかけてください。
 - ナレッジに含まれる情報だけで回答できる場合は、その情報を元に回答してください。
 - ナレッジにない質問でも、一般的なことであればアシスタントとして回答してください。
-- わからない場合や答えられない場合は、無理に回答せず、必ず `[UNCERTAIN]` という接頭辞を付けてから「申し訳ありませんが、わかりかねます」のように正直に伝えてください。
+- わからない場合や答えられない場合は、無理に回答せず、必ず `[UNCERTAIN]` という接頭辞を付けてから「{uncertain_reply_text}」と回答してください。
 - 回答の後に、ユーザーが次に尋ねそうな質問やアクションの選択肢がある場合は、`[選択肢1, 選択肢2]` の形式で提示してください。
 - ユーザーが「メニュー」について尋ね、ナレッジにメニュー情報が存在する場合、必ず `[CAROUSEL]` フォーマットで回答してください。
 
@@ -587,7 +616,6 @@ def create_app(config_class=DevelopmentConfig):
         except Exception as e:
             print(f"Gemini API Error: {e}")
             return "申し訳ありません、AIとの通信中にエラーが発生しました。"
-    # ▲▲▲ ここまで修正 ▲▲▲
 
     def parse_response_for_quick_reply(text: str) -> (str, list):
         match = re.search(r"\[(.*?)\]\s*$", text)
@@ -623,7 +651,9 @@ def create_app(config_class=DevelopmentConfig):
             db.session.rollback()
             print(f"ログ保存エラー: {e}")
 
-        return jsonify({"answer": answer})
+            linked_answer = convert_urls_to_links(answer)
+        return jsonify({"answer": linked_answer})
+
     
     @app.route("/line-webhook", methods=['POST'])
     def line_webhook():
@@ -774,17 +804,13 @@ def change_plan_command():
         print(f"Error: User {email} not found.")
 
 def send_weekly_reports():
-    """顧客ごとの設定に基づき、週次レポートを送信する"""
+    """全顧客に週次レポートを送信する"""
     with app.app_context():
         today = datetime.utcnow()
-        # RenderのCron Jobは日曜日=0, 月曜日=1...となるため、Pythonの曜日に合わせる必要はない
-        # Python: 月曜日=0...日曜日=6, Cron: 日曜日=0...土曜日=6
-        # そのため、Pythonのweekday()に1を足して7で割った余りを求めることで対応
         day_of_week_cron = (today.weekday() + 1) % 7
 
         last_week = today - timedelta(days=7)
         
-        # レポート送信対象の顧客（レポート有効＆今日が指定曜日）を取得
         target_users = User.query.join(CustomerData).filter(
             User.is_admin == False,
             CustomerData.enable_weekly_report == True,
@@ -798,7 +824,6 @@ def send_weekly_reports():
             if not customer_data:
                 continue
 
-            # 期間内のログを集計
             logs = customer_data.logs.filter(
                 ConversationLog.timestamp >= last_week,
                 ConversationLog.timestamp < today
@@ -807,7 +832,6 @@ def send_weekly_reports():
             conversation_count = len(logs)
             uncertain_count = sum(1 for log in logs if log.bot_answer.startswith('[UNCERTAIN]'))
             
-            # メール本文をテンプレートから生成
             html_body = render_template(
                 'report_email.html',
                 user=user,
@@ -817,7 +841,6 @@ def send_weekly_reports():
                 uncertain_count=uncertain_count
             )
             
-            # メールの送信
             msg = Message(
                 subject='LARUbot 週次レポート',
                 recipients=[user.email],

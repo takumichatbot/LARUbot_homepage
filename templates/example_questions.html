@@ -1,44 +1,63 @@
 {% extends "layout.html" %}
 
-{% block title %}質問例のカスタマイズ - {{ super() }}{% endblock %}
+{% block title %}質問例カスタマイズ - {{ super() }}{% endblock %}
 
 {% block page_header %}
-    <a href="{{ url_for('dashboard') }}" class="text-slate-500 hover:text-sky-600 mr-4" title="ダッシュボードに戻る">
-        <i class="fas fa-arrow-left"></i>
-    </a>
-    <h1 class="text-xl font-semibold text-slate-800">質問例のカスタマイズ</h1>
+    <h1 class="text-xl font-semibold text-slate-800">質問例カスタマイズ</h1>
 {% endblock %}
 
 {% block content %}
-<div class="bg-white p-8 rounded-xl shadow-md">
-    <p class="text-slate-600 mb-6">チャットボットに表示される質問の例を編集します。エンドユーザーが会話を始めるきっかけになります。</p>
-
-    <form method="POST" action="{{ url_for('add_example_question') }}" class="mb-8 border-b pb-8">
-        <div class="mb-4">
-            <label for="text" class="block text-slate-700 text-sm font-bold mb-2">新しい質問例:</label>
-            <input type="text" name="text" id="text" class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500" required>
-        </div>
-        <div class="text-right">
-            <button type="submit" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-6 rounded-lg transition-colors">
-                追加する
-            </button>
-        </div>
-    </form>
-
-    <h3 class="text-lg font-bold mb-4 text-slate-800">登録済みリスト</h3>
-    <div class="space-y-3">
-        {% for eq in example_questions %}
-        <div class="flex items-center justify-between bg-slate-50 p-3 rounded-lg">
-            <p class="text-slate-800">{{ eq.text }}</p>
-            <form method="POST" action="{{ url_for('delete_example_question', eq_id=eq.id) }}" onsubmit="return confirm('本当に削除しますか？');">
-                <button type="submit" class="text-red-500 hover:text-red-700 text-sm font-semibold">
-                    <i class="fas fa-trash-alt"></i> 削除
-                </button>
+<div class="space-y-8">
+    
+    {% if current_user.is_admin or current_user.customer_data.plan == 'professional' %}
+        <div class="bg-white p-6 rounded-xl shadow-md">
+            <h2 class="text-lg font-bold mb-4 text-slate-800">新しい質問例を追加</h2>
+            <form action="{{ url_for('add_example_question') }}" method="POST">
+                <div class="flex items-center space-x-4">
+                    <input type="text" name="text" required placeholder="例: おすすめのメニューは？" class="flex-grow mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                    <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
+                        追加
+                    </button>
+                </div>
             </form>
         </div>
+    {% elif example_questions|length < 5 %}
+        <div class="bg-white p-6 rounded-xl shadow-md">
+            <h2 class="text-lg font-bold mb-4 text-slate-800">新しい質問例を追加</h2>
+            <p class="text-sm text-slate-600 mb-4">スタータープランでは5件まで質問例を登録できます。(現在 {{ example_questions|length }} / 5 件)</p>
+            <form action="{{ url_for('add_example_question') }}" method="POST">
+                <div class="flex items-center space-x-4">
+                    <input type="text" name="text" required placeholder="例: おすすめのメニューは？" class="flex-grow mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                    <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
+                        追加
+                    </button>
+                </div>
+            </form>
+        </div>
+    {% else %}
+        <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-lg shadow" role="alert">
+            <p class="font-bold">質問例の登録上限に達しました</p>
+            <p>スタータープランの質問例登録上限数（5件）に達しました。無制限に登録するには、<a href="{{ url_for('index') }}#pricing" class="font-bold underline hover:text-yellow-800">プロフェッショナルプランへのアップグレード</a>をご検討ください。</p>
+        </div>
+    {% endif %}
+    <div class="bg-white p-6 rounded-xl shadow-md">
+        <h2 class="text-lg font-bold mb-4 text-slate-800">登録済みの質問例</h2>
+        {% if example_questions %}
+            <ul class="space-y-3">
+            {% for eq in example_questions %}
+                <li class="flex items-center justify-between bg-slate-50 p-3 rounded-lg">
+                    <span class="text-slate-800">{{ eq.text }}</span>
+                    <form action="{{ url_for('delete_example_question', eq_id=eq.id) }}" method="POST" onsubmit="return confirm('この質問例を削除しますか？');">
+                        <button type="submit" class="text-red-500 hover:text-red-700 text-sm">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </form>
+                </li>
+            {% endfor %}
+            </ul>
         {% else %}
-        <p class="text-slate-500 text-center py-4">まだ質問例は登録されていません。</p>
-        {% endfor %}
+            <p class="text-slate-500">まだ質問例が登録されていません。</p>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

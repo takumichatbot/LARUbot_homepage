@@ -1,66 +1,76 @@
 {% extends "layout.html" %}
 
-{% block title %}Q&Aチューニング - {{ super() }}{% endblock %}
+{% block title %}チューニング - {{ super() }}{% endblock %}
 
 {% block page_header %}
-    <a href="{{ url_for('dashboard') }}" class="text-slate-500 hover:text-sky-600 mr-4" title="ダッシュボードに戻る">
-        <i class="fas fa-arrow-left"></i>
-    </a>
     <h1 class="text-xl font-semibold text-slate-800">Q&Aチューニング</h1>
 {% endblock %}
 
 {% block content %}
 <div class="space-y-8">
-    <div class="bg-white p-8 rounded-xl shadow-md">
-        <h2 class="text-2xl font-bold mb-1 text-slate-800">新しいQ&Aを追加</h2>
-        <p class="text-slate-500 mb-6">チャットボットに新しい知識を教え込みましょう。</p>
-        <form action="{{ url_for('add_qa') }}" method="POST">
-            <div class="mb-4">
-                <label for="question" class="block text-slate-700 text-sm font-bold mb-2">質問 (User says):</label>
-                <input type="text" id="question" name="question" required placeholder="例：営業時間を教えてください" class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-slate-700">
-            </div>
-            <div class="mb-4">
-                <label for="answer" class="block text-slate-700 text-sm font-bold mb-2">回答 (Bot says):</label>
-                <textarea id="answer" name="answer" rows="4" required placeholder="例：平日の午前9時から午後6時までです。" class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-slate-700"></textarea>
-            </div>
-            <button type="submit" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-6 rounded-lg transition-colors shadow-lg">
-                <i class="fas fa-plus mr-2"></i>追加する
-            </button>
-        </form>
-    </div>
 
-    <div class="bg-white p-8 rounded-xl shadow-md">
-        <h2 class="text-2xl font-bold mb-6 text-slate-800">登録済みQ&Aリスト</h2>
-        <div class="space-y-6">
-            {% if qas %}
-                {% for qa in qas %}
-                <div class="border-t pt-6">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="font-semibold text-slate-500 text-sm">Q:</p>
-                            <p class="text-slate-800 text-lg">{{ qa.question }}</p>
-                        </div>
-                        <div class="flex space-x-2 flex-shrink-0 ml-4">
-                            <button class="text-slate-400 hover:text-sky-600 text-sm"><i class="fas fa-pen"></i> 編集</button>
-                            <form action="{{ url_for('delete_qa', qa_id=qa.id) }}" method="POST" onsubmit="return confirm('本当にこのQ&Aを削除しますか？');">
-                                <button type="submit" class="text-slate-400 hover:text-red-600 text-sm"><i class="fas fa-trash-alt"></i> 削除</button>
-                            </form>
-                        </div>
-                    </div>
-                    <div class="mt-2">
-                        <p class="font-semibold text-sky-600 text-sm">A:</p>
-                        <p class="text-slate-600 mt-1 whitespace-pre-wrap p-4 bg-slate-50 rounded-md">{{ qa.answer }}</p>
-                    </div>
+    {% if current_user.is_admin or current_user.customer_data.plan == 'professional' %}
+        <div class="bg-white p-6 rounded-xl shadow-md">
+            <h2 class="text-lg font-bold mb-4 text-slate-800">新しいQ&Aを追加</h2>
+            <form action="{{ url_for('add_qa') }}" method="POST" class="space-y-4">
+                <div>
+                    <label for="question" class="block text-sm font-medium text-gray-700">質問 (Q)</label>
+                    <input type="text" name="question" id="question" required placeholder="例：営業時間は？" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
                 </div>
-                {% endfor %}
-            {% else %}
-                <div class="text-center py-12">
-                    <i class="fas fa-box-open text-4xl text-slate-300 mb-4"></i>
-                    <p class="text-slate-500">まだQ&Aが登録されていません。</p>
-                    <p class="text-slate-400 text-sm">上のフォームから最初のQ&Aを追加してみましょう！</p>
+                <div>
+                    <label for="answer" class="block text-sm font-medium text-gray-700">回答 (A)</label>
+                    <textarea name="answer" id="answer" rows="3" required placeholder="例：平日の10時から19時までです。" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"></textarea>
                 </div>
-            {% endif %}
+                <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
+                    <i class="fas fa-plus mr-2"></i> Q&Aを追加
+                </button>
+            </form>
         </div>
+    {% elif qas|length < 100 %}
+        <div class="bg-white p-6 rounded-xl shadow-md">
+            <h2 class="text-lg font-bold mb-4 text-slate-800">新しいQ&Aを追加</h2>
+            <p class="text-sm text-slate-600 mb-4">スタータープランでは100件までQ&Aを登録できます。(現在 {{ qas|length }} / 100 件)</p>
+            <form action="{{ url_for('add_qa') }}" method="POST" class="space-y-4">
+                <div>
+                    <label for="question" class="block text-sm font-medium text-gray-700">質問 (Q)</label>
+                    <input type="text" name="question" id="question" required placeholder="例：営業時間は？" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                </div>
+                <div>
+                    <label for="answer" class="block text-sm font-medium text-gray-700">回答 (A)</label>
+                    <textarea name="answer" id="answer" rows="3" required placeholder="例：平日の10時から19時までです。" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"></textarea>
+                </div>
+                <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
+                    <i class="fas fa-plus mr-2"></i> Q&Aを追加
+                </button>
+            </form>
+        </div>
+    {% else %}
+        <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-lg shadow" role="alert">
+            <p class="font-bold">Q&Aの登録上限に達しました</p>
+            <p>スタータープランのQ&A登録上限数（100件）に達しました。無制限に登録するには、<a href="{{ url_for('index') }}#pricing" class="font-bold underline hover:text-yellow-800">プロフェッショナルプランへのアップグレード</a>をご検討ください。</p>
+        </div>
+    {% endif %}
+    <div class="bg-white p-6 rounded-xl shadow-md">
+        <h2 class="text-lg font-bold mb-4 text-slate-800">登録済みQ&A一覧</h2>
+        {% if qas %}
+            <div class="space-y-4">
+            {% for qa in qas %}
+                <div class="border rounded-lg p-4">
+                    <p class="font-semibold text-slate-800">Q: {{ qa.question }}</p>
+                    <p class="text-slate-600 mt-1">A: {{ qa.answer }}</p>
+                    <div class="text-right mt-2">
+                        <form action="{{ url_for('delete_qa', qa_id=qa.id) }}" method="POST" onsubmit="return confirm('本当にこのQ&Aを削除しますか？');" class="inline-block">
+                            <button type="submit" class="text-sm text-red-500 hover:text-red-700">
+                                <i class="fas fa-trash-alt mr-1"></i> 削除
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-slate-500">まだQ&Aが登録されていません。</p>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

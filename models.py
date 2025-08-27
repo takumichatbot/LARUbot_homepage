@@ -50,10 +50,11 @@ class CustomerData(db.Model):
     line_channel_token = db.Column(db.String(255), nullable=True)
     line_channel_secret = db.Column(db.String(255), nullable=True)
     onboarding_completed = db.Column(db.Boolean, nullable=False, default=False)
-
-    # ▼▼▼ 通知設定のために、以下の2行を新しく追加します ▼▼▼
     enable_weekly_report = db.Column(db.Boolean, nullable=False, default=True)
-    report_day_of_week = db.Column(db.Integer, nullable=False, default=1) # 0=日曜, 1=月曜...
+    report_day_of_week = db.Column(db.Integer, nullable=False, default=1)
+
+    # ▼▼▼ 以下の1行を新しく追加します ▼▼▼
+    uncertain_reply = db.Column(db.String(500), nullable=False, default='申し訳ありませんが、わかりかねます。')
     # ▲▲▲ ここまで追加 ▲▲▲
 
     qas = db.relationship('QA', backref='customer_data', lazy='dynamic', cascade="all, delete-orphan")

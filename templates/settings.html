@@ -69,7 +69,7 @@
                     </label>
                     <input type="text" id="bot_name" name="bot_name" value="{{ data.bot_name }}" class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-sky-500">
                 </div>
-                <div>
+                <div class="mb-6">
                     <label for="welcome_message" class="block text-slate-700 text-sm font-bold mb-2">
                         <div class="tooltip-container">
                             <span>歓迎メッセージ</span>
@@ -79,7 +79,17 @@
                     </label>
                     <textarea id="welcome_message" name="welcome_message" rows="4" class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-sky-500">{{ data.welcome_message }}</textarea>
                 </div>
-            </div>
+                <div>
+                    <label for="uncertain_reply" class="block text-slate-700 text-sm font-bold mb-2">
+                        <div class="tooltip-container">
+                            <span>不明な質問への応答</span>
+                            <i class="fas fa-question-circle tooltip-icon"></i>
+                            <span class="tooltip-text">AIがユーザーの質問に答えられない場合に、このメッセージを返します。</span>
+                        </div>
+                    </label>
+                    <textarea id="uncertain_reply" name="uncertain_reply" rows="4" class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-slate-700 leading-tight focus:outline-none focus:ring-2 focus:ring-sky-500">{{ data.uncertain_reply }}</textarea>
+                </div>
+                </div>
 
             <div>
                 <h3 class="text-xl font-bold mb-4 text-slate-800 border-b pb-2">デザイン設定</h3>
@@ -156,6 +166,7 @@
                     </select>
                 </div>
             </div>
+
             <div class="mt-8 text-right">
                 <button type="submit" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-lg focus:outline-none focus:shadow-outline transition-colors shadow-lg hover:shadow-xl">
                     <i class="fas fa-save mr-2"></i> 保存する

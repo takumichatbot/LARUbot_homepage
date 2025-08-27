@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ data.bot_name }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/chatbot.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -16,8 +16,8 @@
             <div class="message bot-message">{{ data.welcome_message }}</div>
             {% if example_questions %}
             <div class="example-questions-container" id="initial-example-questions">
-                {% for question in example_questions %}
-                <button class="example-btn">{{ question }}</button>
+                {% for eq in example_questions %}
+                <button class="example-btn">{{ eq.text }}</button>
                 {% endfor %}
             </div>
             {% endif %}
@@ -27,7 +27,7 @@
             <button id="send-button"><i class="fas fa-paper-plane"></i></button>
         </div>
 
-        {% if data.plan == 'starter' %}
+        {% if data.plan != 'professional' %}
         <div class="chatbot-footer">
             <a href="{{ url_for('index', _external=True) }}" target="_blank">Powered by LARUbot</a>
         </div>
@@ -35,8 +35,93 @@
     </div>
 
    <script>
-       const API_ENDPOINT = '/ask/{{ data.user_id }}';
+        // ▼▼▼ 以下にJavaScriptの全コードを記載します ▼▼▼
+        const chatBox = document.getElementById('chatbot-messages');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+        const initialExampleQuestions = document.getElementById('initial-example-questions');
+
+        // セッションごとに一意のIDを生成
+        if (!sessionStorage.getItem('chatbot_session_id')) {
+            sessionStorage.setItem('chatbot_session_id', Date.now().toString() + Math.random().toString(36).substring(2));
+        }
+        const sessionId = sessionStorage.getItem('chatbot_session_id');
+
+        // メッセージをチャットボックスに追加する関数
+        function addMessage(text, sender) {
+            const messageElement = document.createElement('div');
+            messageElement.className = `message ${sender}-message`;
+            
+            // ▼▼▼ .innerText を .innerHTML に変更します ▼▼▼
+            // これにより、AIからの応答に含まれるHTMLリンクが正しく表示されます。
+            messageElement.innerHTML = text;
+            // ▲▲▲ ここまで修正 ▲▲▲
+
+            chatBox.appendChild(messageElement);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // メッセージを送信する関数
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (message === '') return;
+
+            addMessage(message, 'user');
+            userInput.value = '';
+            
+            // 質問例があった場合は非表示にする
+            if(initialExampleQuestions) {
+                initialExampleQuestions.style.display = 'none';
+            }
+
+            // ローディングインジケーターを表示
+            const loadingElement = document.createElement('div');
+            loadingElement.className = 'message bot-message loading';
+            loadingElement.innerHTML = '<span></span><span></span><span></span>';
+            chatBox.appendChild(loadingElement);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            try {
+                const response = await fetch('/ask/{{ data.user_id }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message, session_id: sessionId }),
+                });
+                const data = await response.json();
+                
+                // ローディングインジケーターを削除
+                chatBox.removeChild(loadingElement);
+                // AIからの応答を表示
+                addMessage(data.answer, 'bot');
+
+            } catch (error) {
+                console.error('Error:', error);
+                chatBox.removeChild(loadingElement);
+                addMessage('申し訳ありません、エラーが発生しました。', 'bot');
+            }
+        }
+
+        // 送信ボタンのクリックイベント
+        sendButton.addEventListener('click', sendMessage);
+
+        // Enterキーでの送信イベント
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // 質問例ボタンのクリックイベント
+        document.querySelectorAll('.example-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                const question = button.textContent;
+                userInput.value = question;
+                sendMessage();
+            });
+        });
+
    </script>
-   <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
