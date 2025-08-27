@@ -280,6 +280,8 @@ def create_app(config_class=DevelopmentConfig):
             customer_data.line_channel_secret = request.form.get('line_channel_secret', '').strip()
             customer_data.enable_weekly_report = 'enable_weekly_report' in request.form
             customer_data.report_day_of_week = int(request.form.get('report_day_of_week', 1))
+            customer_data.enable_weekly_report = 'enable_weekly_report' in request.form
+            customer_data.report_day_of_week = int(request.form.get('report_day_of_week', 1))
             db.session.commit()
             flash('設定を保存しました！', 'success')
             return redirect(url_for('settings'))
