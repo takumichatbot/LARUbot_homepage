@@ -774,18 +774,31 @@ def change_plan_command():
         print(f"Error: User {email} not found.")
 
 def send_weekly_reports():
-    """全顧客に週次レポートを送信する"""
+    """顧客ごとの設定に基づき、週次レポートを送信する"""
     with app.app_context():
         today = datetime.utcnow()
+        # RenderのCron Jobは日曜日=0, 月曜日=1...となるため、Pythonの曜日に合わせる必要はない
+        # Python: 月曜日=0...日曜日=6, Cron: 日曜日=0...土曜日=6
+        # そのため、Pythonのweekday()に1を足して7で割った余りを求めることで対応
+        day_of_week_cron = (today.weekday() + 1) % 7
+
         last_week = today - timedelta(days=7)
         
-        users = User.query.filter_by(is_admin=False).all()
+        # レポート送信対象の顧客（レポート有効＆今日が指定曜日）を取得
+        target_users = User.query.join(CustomerData).filter(
+            User.is_admin == False,
+            CustomerData.enable_weekly_report == True,
+            CustomerData.report_day_of_week == day_of_week_cron
+        ).all()
         
-        for user in users:
+        print(f"Today is day {day_of_week_cron}. Found {len(target_users)} users to report.")
+
+        for user in target_users:
             customer_data = user.customer_data
             if not customer_data:
                 continue
 
+            # 期間内のログを集計
             logs = customer_data.logs.filter(
                 ConversationLog.timestamp >= last_week,
                 ConversationLog.timestamp < today
@@ -794,6 +807,7 @@ def send_weekly_reports():
             conversation_count = len(logs)
             uncertain_count = sum(1 for log in logs if log.bot_answer.startswith('[UNCERTAIN]'))
             
+            # メール本文をテンプレートから生成
             html_body = render_template(
                 'report_email.html',
                 user=user,
@@ -803,6 +817,7 @@ def send_weekly_reports():
                 uncertain_count=uncertain_count
             )
             
+            # メールの送信
             msg = Message(
                 subject='LARUbot 週次レポート',
                 recipients=[user.email],
