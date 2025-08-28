@@ -25,80 +25,79 @@
         .step-card::after { content: ''; position: absolute; top: 3.5rem; right: -2.5rem; width: calc(100% - 2.5rem); height: 2px; background-image: linear-gradient(to right, #e2e8f0 50%, transparent 50%); background-size: 16px 2px; z-index: 0; }
         .step-card:last-child::after { display: none; }
         @media (max-width: 767px) { .step-card::after { display: none; } }
-        /* フローティングチャット用のスタイル - LARUbot近未来版 */
-        .chat-container {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-        }
+        /* フローティングチャット用のスタイル - 使いやすさ第一版 */
+.chat-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
 
-        .chat-iframe-container {
-            width: 380px;  /* モダンな印象にするため少し幅を広げます */
-            height: 600px; /* 高さを出します */
-            max-height: calc(100vh - 120px);
-            background: linear-gradient(145deg, #1f2937, #111827); /* ダークなグラデーション背景 */
-            border-radius: 20px; /* より滑らかな角丸 */
-            /* 光るボーダー（枠線）エフェクト */
-            box-shadow: 0 0 25px rgba(56, 189, 248, 0.4), 0 0 10px rgba(56, 189, 248, 0.2);
-            border: 1px solid rgba(56, 189, 248, 0.3);
-            overflow: hidden;
-            margin-bottom: 16px;
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease-out; /* より滑らかなアニメーション */
-            transform-origin: bottom right;
-        }
+.chat-iframe-container {
+    width: 380px;
+    height: 580px;
+    max-height: calc(100vh - 120px);
+    background-color: #ffffff; /* 明るくクリーンな白背景 */
+    border-radius: 16px; /* 親しみやすい角丸 */
+    /* 派手すぎず、浮かび上がって見える自然な影 */
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0; /* 境界を明確にするための薄い線 */
+    overflow: hidden;
+    margin-bottom: 16px;
+    /* スムーズで分かりやすいアニメーション */
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease-out;
+    transform-origin: bottom right;
+}
 
-        .chat-iframe-container.hidden {
-            opacity: 0;
-            transform: scale(0.9) translateY(20px); /* 隠れる際のアニメーションを強化 */
-            pointer-events: none;
-        }
+.chat-iframe-container.hidden {
+    opacity: 0;
+    transform: translateY(20px); /* シンプルに少し下がる動き */
+    pointer-events: none;
+}
 
-        /* 新しいコンテナ内でiframeが正しくスタイルされるようにします */
-        .chat-iframe-container iframe {
-            border-radius: 20px;
-        }
+.chat-iframe-container iframe {
+    border-radius: 16px;
+}
 
-        .chat-button {
-            width: 64px;
-            height: 64px;
-            /* 近未来的なグラデーション */
-            background: linear-gradient(45deg, #38bdf8, #0ea5e9);
-            color: #fff;
-            border-radius: 50%;
-            /* ボタンの主な影と近未来的なグロー効果 */
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2), 0 0 20px rgba(56, 189, 248, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.8rem;
-            cursor: pointer;
-            border: none;
-            /* さりげない鼓動（パルス）アニメーションを追加 */
-            animation: pulse-animation 2s infinite;
-            transition: all .3s ease-in-out;
-        }
+.chat-button {
+    width: 64px;
+    height: 64px;
+    background-color: #3b5998; /* 信頼感のあるプロフェッショナルな青 */
+    color: #fff;
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* ボタンを少し浮かせる影 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    cursor: pointer;
+    border: none;
+    /* ユーザーの注意を優しく引く、ゆっくりとした鼓動アニメーション */
+    animation: soft-pulse 2.5s infinite ease-in-out;
+    transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
+}
 
-        .chat-button:hover {
-            transform: scale(1.1);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25), 0 0 30px rgba(56, 189, 248, 0.7);
-        }
+.chat-button:hover {
+    transform: scale(1.1);
+    background-color: #324a81; /* ホバー時に少し濃い青に */
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
 
-        /* ボタンの鼓動アニメーションを定義 */
-        @keyframes pulse-animation {
-            0% {
-                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2), 0 0 20px rgba(56, 189, 248, 0.5);
-            }
-            50% {
-                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2), 0 0 30px rgba(56, 189, 248, 0.8);
-            }
-            100% {
-                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2), 0 0 20px rgba(56, 189, 248, 0.5);
-            }
-        }
+/* ボタンの邪魔にならない、さりげない鼓動アニメーション */
+@keyframes soft-pulse {
+    0% {
+        box-shadow: 0 4px 12px rgba(59, 89, 152, 0.2);
+    }
+    50% {
+        box-shadow: 0 4px 20px rgba(59, 89, 152, 0.4);
+    }
+    100% {
+        box-shadow: 0 4px 12px rgba(59, 89, 152, 0.2);
+    }
+}
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
