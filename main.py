@@ -465,12 +465,13 @@ def create_app(config_class=DevelopmentConfig):
         stripe_pro_price_id = os.getenv('STRIPE_PRO_PRICE_ID')
         demo_customer = CustomerData.query.filter_by(user_id=1).first()
         demo_public_id = demo_customer.public_id if demo_customer else None
+        
         return render_template(
-        'index.html', 
-        stripe_starter_price_id=stripe_starter_price_id,
-        stripe_pro_price_id=stripe_pro_price_id
-        demo_public_id=demo_public_id
-    )
+            'index.html', 
+            stripe_starter_price_id=stripe_starter_price_id,
+            stripe_pro_price_id=stripe_pro_price_id,
+            demo_public_id=demo_public_id
+        )
 
     @app.route('/terms')
     def terms_of_service():
@@ -561,14 +562,11 @@ def create_app(config_class=DevelopmentConfig):
                 db.session.commit()
         return 'Success', 200
 
-    # ▼▼▼ URLの <int:user_id> を <string:public_id> に変更 ▼▼▼
     @app.route('/chatbot/<string:public_id>')
     def chatbot_page(public_id):
-        # ▼▼▼ 検索条件を user_id から public_id に変更 ▼▼▼
         customer_data = CustomerData.query.filter_by(public_id=public_id).first_or_404()
         
         example_questions = []
-        # ▼▼▼ customer_data から user を取得するように変更 ▼▼▼
         if customer_data.plan == 'professional' or (customer_data.user and customer_data.user.is_admin):
             example_questions = customer_data.example_questions.order_by(ExampleQuestion.id.asc()).all()
         
@@ -648,9 +646,9 @@ def create_app(config_class=DevelopmentConfig):
         else:
             return text, []
 
-    @app.route('/ask/<int:user_id>', methods=['POST'])
-    def ask_chatbot(user_id):
-        customer_data = CustomerData.query.filter_by(user_id=user_id).first_or_404()
+    @app.route('/ask/<string:public_id>', methods=['POST'])
+    def ask_chatbot(public_id):
+        customer_data = CustomerData.query.filter_by(public_id=public_id).first_or_404()
         user_message = request.json.get('message')
         session_id = request.json.get('session_id')
 
