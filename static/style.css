@@ -1,23 +1,23 @@
 /* 全体のスタイル */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #f0f2f5;
+    background: linear-gradient(135deg, #e9ecef, #f8f9fa); /* グラデーション背景 */
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
     margin: 0;
+    font-size: 1em;
 }
 
 /* チャットボットコンテナ */
 .chatbot-container {
-    width: 100%;
-    max-width: 400px; /* スマホで見やすいように少しスリムに調整 */
-    height: 95vh;   /* 高さを少し調整 */
-    max-height: 700px;
-    background-color: #ffffff;
-    border-radius: 16px;
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1);
+    width: 90%;
+    max-width: 600px;
+    height: 90vh;
+    background-color: #fff;
+    border-radius: 15px; /* 角丸を大きく */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15); /* 影を強調 */
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -25,14 +25,12 @@ body {
 
 /* ヘッダー */
 .chatbot-header {
-    background: #3b5998; /* デフォルト色 */
+    background: linear-gradient(90deg, #3b5998, #3b5998); /* ヘッダーをグラデーションに */
     color: #fff;
-    padding: 16px;
+    padding: 15px;
     text-align: center;
-    font-size: 1.25em;
-    font-weight: 600;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    z-index: 10;
+    font-size: 1.3em;
+    font-weight: bold;
 }
 
 /* メッセージエリア */
@@ -42,147 +40,148 @@ body {
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    scroll-behavior: smooth;
+    gap: 15px;
+    scroll-behavior: smooth; /* スムーズスクロール */
 }
 
 /* 個々のメッセージ */
 .message {
-    padding: 12px 18px;
-    border-radius: 18px;
-    max-width: 80%;
-    line-height: 1.5;
+    padding: 15px 20px;
+    border-radius: 20px;
+    max-width: 85%;
+    line-height: 1.6;
     word-wrap: break-word;
-    animation: fadeIn 0.4s ease-out;
+    white-space: pre-wrap; /* 改行を保持 */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    animation: fadeIn 0.3s ease-in-out;
 }
 
+/* フェードインアニメーション */
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* ボットのメッセージ */
 .bot-message {
-    background-color: #e4e6eb;
-    color: #050505;
+    background-color: #f1f0f0;
+    color: #333;
     align-self: flex-start;
-    border-bottom-left-radius: 4px;
+    border-bottom-left-radius: 5px;
+    border: 1px solid #e0e0e0;
 }
 
 /* ユーザーのメッセージ */
 .user-message {
-    background-color: #0084ff; /* よりチャットらしい色に変更 */
+    background-color: #3b5998;
     color: #fff;
     align-self: flex-end;
-    border-bottom-right-radius: 4px;
+    border-bottom-right-radius: 5px;
 }
 
 /* 入力エリア */
 .chatbot-input {
     display: flex;
-    padding: 10px;
+    padding: 15px;
     border-top: 1px solid #ddd;
-    background-color: #ffffff;
+    background-color: #f9f9f9;
     align-items: center;
 }
 
 .chatbot-input input {
     flex-grow: 1;
-    border: none;
-    background-color: #f0f2f5;
-    border-radius: 20px;
-    padding: 10px 18px;
+    border: 1px solid #ccc;
+    border-radius: 25px;
+    padding: 12px 20px;
     font-size: 1em;
+    transition: all 0.3s;
 }
 
 .chatbot-input input:focus {
     outline: none;
+    border-color: #3b5998;
+    box-shadow: 0 0 0 2px rgba(90, 103, 216, 0.2);
 }
 
 .chatbot-input button {
-    background-color: transparent;
-    color: #0084ff;
+    background-color: #3b5998;
+    color: #fff;
     border: none;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
+    border-radius: 25px;
+    padding: 12px 25px;
     margin-left: 10px;
     cursor: pointer;
-    font-size: 1.2em;
-    transition: background-color 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    font-size: 1em;
+    transition: background-color 0.3s, transform 0.2s;
+    font-weight: bold;
 }
 
 .chatbot-input button:hover {
-    background-color: #f0f2f5;
+    background-color: #3b5998;
+    transform: translateY(-1px);
+}
+
+/* 質問例ボタンコンテナ */
+.example-questions-container {
+    display: flex;
+    flex-direction: column; /* これを追加 */
+    flex-wrap: nowrap;     /* これを追加 */
+    gap: 10px;
+    padding: 0 15px;
+    align-items: center;   /* これを追加 */
 }
 
 /* 質問例ボタン */
-.example-questions-container {
-    display: flex;
-    flex-wrap: wrap; /* 折り返しを許可 */
-    gap: 8px;
-    padding: 5px 0;
-}
-
 .example-btn {
-    background-color: transparent;
-    color: #0084ff;
-    border: 1px solid #0084ff;
+    background-color: #e2e8f0;
+    color: #4a5568;
+    border: 1px solid #cbd5e0;
     border-radius: 20px;
-    padding: 8px 12px;
+    padding: 10px 15px;
     font-size: 0.9em;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: background-color 0.3s, transform 0.2s;
+    width: 100%; /* これを追加 */
+    max-width: 400px; /* 必要に応じて調整 */
+    text-align: center; /* ボタンのテキストを中央揃えに */
 }
 
 .example-btn:hover {
-    background-color: #e7f3ff;
+    background-color: #cbd5e0;
+    transform: translateY(-2px);
 }
 
-
-/* ▼▼▼【重要】タイピングインジケーター用のCSSを追加 ▼▼▼ */
-#typing-indicator .typing-dot {
-    width: 8px;
-    height: 8px;
-    background-color: #8e8e8e;
-    border-radius: 50%;
-    display: inline-block;
-    margin: 0 2px;
-    animation: typing 1.4s infinite;
+/* ローディングメッセージのスタイル */
+.loading-message {
+    background-color: #f1f0f0;
+    color: #888;
+    align-self: flex-start;
+    padding: 15px 20px;
+    border-radius: 20px;
+    max-width: 80%;
+    line-height: 1.5;
+    animation: pulse 1s infinite;
 }
 
-#typing-indicator .typing-dot:nth-child(2) {
-    animation-delay: 0.2s;
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
 }
 
-#typing-indicator .typing-dot:nth-child(3) {
-    animation-delay: 0.4s;
-}
-
-@keyframes typing {
-    0%, 60%, 100% {
-        transform: translateY(0);
-    }
-    30% {
-        transform: translateY(-5px);
-    }
-}
-
-.chatbot-footer {
+/* ウェルカムメッセージ */
+.welcome-message {
+    font-style: italic;
+    color: #3b5998;
     text-align: center;
-    padding: 8px;
-    font-size: 0.8em;
-    background-color: #f0f2f5;
-    border-top: 1px solid #ddd;
-}
-.chatbot-footer a {
-    color: #65676b;
-    text-decoration: none;
-    font-weight: 500;
-}
-.chatbot-footer a:hover {
-    text-decoration: underline;
+    padding: 20px;
+    background-color: #eef2ff;
+    border-radius: 10px;
+    margin: 10px 0;
 }
