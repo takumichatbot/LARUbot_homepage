@@ -793,6 +793,10 @@ app = create_app()
     def feature_log_analysis():
         return render_template('features/log_analysis.html')
 
+@app.route('/features/line-integration')
+    def feature_line_integration():
+        return render_template('features/line_integration.html')
+
 
 @app.cli.command("make-admin")
 def make_admin_command():

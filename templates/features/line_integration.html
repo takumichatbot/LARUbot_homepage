@@ -1,0 +1,67 @@
+{% extends "layout.html" %}
+
+{% block title %}LINE公式アカウント連携 - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="bg-white py-12">
+    <div class="container mx-auto px-6 max-w-4xl">
+        <a href="{{ url_for('index') }}#features" class="text-sky-600 hover:underline mb-6 inline-block">&larr; 機能一覧に戻る</a>
+        
+        <h1 class="text-4xl font-bold text-gradient mb-4">LINE公式アカウント連携</h1>
+        <p class="text-lg text-slate-600 mb-8">日本で最も利用されているコミュニケーションアプリ「LINE」上で、24時間365日稼働する自動応答スタッフを配置できます。顧客との接点を強化し、エンゲージメントを高めましょう。</p>
+
+        <div class="mt-12 space-y-12">
+            <div>
+                <h2 class="text-2xl font-bold mb-4 text-slate-800 border-b pb-2">主なメリット</h2>
+                <ul class="list-disc list-inside space-y-2 text-slate-700">
+                    <li><strong>機会損失の防止:</strong> 営業時間外や定休日でも、AIが一次対応を行うことで、顧客の離脱を防ぎます。</li>
+                    <li><strong>顧客満足度の向上:</strong> ユーザーは普段使い慣れたLINEアプリから、いつでも気軽に問い合わせができます。</li>
+                    <li><strong>設定の簡易さ:</strong> 管理画面からキー情報を設定するだけで、すぐに連携が完了します。</li>
+                </ul>
+            </div>
+
+            <div>
+                <h2 class="text-2xl font-bold mb-4 text-slate-800 border-b pb-2">具体的な設定手順</h2>
+                <div class="space-y-10">
+                    <div class="flex flex-col md:flex-row items-start md:space-x-6">
+                        <div class="flex items-center mb-4 md:mb-0">
+                            <div class="w-12 h-12 bg-sky-500 text-white font-bold rounded-full flex items-center justify-center text-xl flex-shrink-0">1</div>
+                        </div>
+                        <div class="flex-grow">
+                            <h3 class="font-bold text-lg text-slate-800">LINE Developersでチャネル作成</h3>
+                            <p class="text-slate-600 mt-1 mb-4">LINE Developersにログインし、「Messaging API」のチャネルを新規作成します。詳しい手順は<a href="https://developers.line.biz/ja/docs/messaging-api/getting-started/" target="_blank" class="text-sky-600 hover:underline">公式ドキュメント</a>をご参照ください。</p>
+                            <img src="{{ url_for('static', filename='images/line-dev-channel-create.png') }}" alt="LINE Developersコンソールのチャネル作成画面" class="rounded-lg shadow-md border">
+                        </div>
+                    </div>
+                    <div class="flex flex-col md:flex-row items-start md:space-x-6">
+                        <div class="flex items-center mb-4 md:mb-0">
+                            <div class="w-12 h-12 bg-sky-500 text-white font-bold rounded-full flex items-center justify-center text-xl flex-shrink-0">2</div>
+                        </div>
+                        <div class="flex-grow">
+                            <h3 class="font-bold text-lg text-slate-800">キー情報を取得</h3>
+                            <p class="text-slate-600 mt-1 mb-4">作成したチャネルの「チャネル基本設定」から**チャネルシークレット**を、「Messaging API設定」から**チャネルアクセストークン**をそれぞれコピーします。</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <img src="{{ url_for('static', filename='images/line-dev-channel-secret.png') }}" alt="チャネルシークレットの場所" class="rounded-lg shadow-md border">
+                                <img src="{{ url_for('static', filename='images/line-dev-access-token.png') }}" alt="チャネルアクセストークンの場所" class="rounded-lg shadow-md border">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-col md:flex-row items-start md:space-x-6">
+                        <div class="flex items-center mb-4 md:mb-0">
+                            <div class="w-12 h-12 bg-sky-500 text-white font-bold rounded-full flex items-center justify-center text-xl flex-shrink-0">3</div>
+                        </div>
+                        <div class="flex-grow">
+                            <h3 class="font-bold text-lg text-slate-800">LARUbot管理画面で設定</h3>
+                            <p class="text-slate-600 mt-1 mb-4">LARUbotの「カスタマイズ」ページを開き、コピーした2つのキー情報をそれぞれ対応する欄に貼り付けて保存します。</p>
+                            <img src="{{ url_for('static', filename='images/larubot-settings-line.png') }}" alt="LARUbotのLINE設定画面" class="rounded-lg shadow-md border mb-6">
+                            <a href="{{ url_for('settings') }}" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-6 rounded-lg transition-colors">
+                                設定ページへ移動
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
