@@ -466,15 +466,23 @@ def create_app(config_class=DevelopmentConfig):
         demo_customer = CustomerData.query.filter_by(user_id=1).first()
         demo_public_id = demo_customer.public_id if demo_customer else None
         
-        # ▼▼▼ ここが変更点 ▼▼▼
+        example_questions = []
+        if demo_customer:
+            # プロフェッショナルプランの条件、または管理者の条件で質問例を取得
+            if demo_customer.plan == 'professional' or (demo_customer.user and demo_customer.user.is_admin):
+                example_questions = demo_customer.example_questions.order_by(ExampleQuestion.id.asc()).all()
+            # スタータープランの場合は5件まで
+            elif demo_customer.plan == 'starter':
+                 example_questions = demo_customer.example_questions.order_by(ExampleQuestion.id.asc()).limit(5).all()
+
         return render_template(
             'index.html', 
             stripe_starter_price_id=stripe_starter_price_id,
             stripe_pro_price_id=stripe_pro_price_id,
             demo_public_id=demo_public_id,
-            chatbot_settings=demo_customer  # 設定情報をテンプレートに渡す
+            chatbot_settings=demo_customer,
+            example_questions=example_questions # 質問例をテンプレートに渡す
         )
-        # ▲▲▲ ここまで ▲▲▲
 
     @app.route('/terms')
     def terms_of_service():
