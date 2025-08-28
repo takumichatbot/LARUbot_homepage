@@ -480,19 +480,19 @@ def create_app(config_class=DevelopmentConfig):
     # ▼▼▼ 機能詳細ページのルートをここから追加します ▼▼▼
     @app.route('/features/carousel')
     def feature_carousel():
-        return render_template('features/carousel.html')
+        return render_template('features/carousel.html', user=current_user)
 
     @app.route('/features/ai-dialogue')
     def feature_ai_dialogue():
-        return render_template('features/ai_dialogue.html')
+        return render_template('features/ai_dialogue.html', user=current_user)
 
     @app.route('/features/log-analysis')
     def feature_log_analysis():
-        return render_template('features/log_analysis.html')
+        return render_template('features/log_analysis.html', user=current_user)
 
     @app.route('/features/line-integration')
     def feature_line_integration():
-        return render_template('features/line_integration.html')
+        return render_template('features/line_integration.html', user=current_user)
     # ▲▲▲ ここまで追加 ▲▲▲
 
     @app.route('/contact', methods=['POST'])
