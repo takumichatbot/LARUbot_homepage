@@ -29,7 +29,7 @@
         <p class="mb-2 text-slate-600">以下のURLをサイトに埋め込むか、直接アクセスしてチャットボットをテストできます。</p>
         <div class="flex items-center space-x-2 bg-slate-100 p-3 rounded-lg">
             <i class="fas fa-link text-slate-500"></i>
-            <input id="chatbot-url" type="text" value="{{ url_for('chatbot_page', user_id=user.id, _external=True) }}" readonly class="flex-grow bg-transparent outline-none text-sky-700">
+            <input id="chatbot-url" type="text" value="{{ url_for('chatbot_page', public_id=public_id, _external=True) }}" readonly class="flex-grow bg-transparent outline-none text-sky-700">
             <button onclick="copyUrl()" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-1 px-3 text-sm rounded-md transition">コピー</button>
         </div>
     </div>

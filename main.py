@@ -270,7 +270,7 @@ def create_app(config_class=DevelopmentConfig):
         elif customer_data.plan == 'trial' and not customer_data.is_on_trial():
             flash('無料トライアルは終了しました。引き続きサービスをご利用いただくには、有料プランへのアップグレードが必要です。', 'warning')
 
-        return render_template('dashboard.html', user=current_user, data=customer_data)
+        return render_template('dashboard.html', user=current_user, data=customer_data, public_id=customer_data.public_id)
 
     @app.route('/settings', methods=['GET', 'POST'])
     @login_required
@@ -558,13 +558,17 @@ def create_app(config_class=DevelopmentConfig):
                 db.session.commit()
         return 'Success', 200
 
-    @app.route('/chatbot/<int:user_id>')
-    def chatbot_page(user_id):
-        customer_data = CustomerData.query.filter_by(user_id=user_id).first_or_404()
-        example_questions = []
-        if customer_data.plan == 'professional':
-            example_questions = customer_data.example_questions.order_by(ExampleQuestion.id.asc()).all()
-        return render_template('chatbot_page.html', data=customer_data, example_questions=example_questions)
+    @app.route('/chatbot/<string:public_id>')
+    def chatbot_page(public_id):
+    # ▼▼▼ 検索条件を user_id から public_id に変更 ▼▼▼
+    customer_data = CustomerData.query.filter_by(public_id=public_id).first_or_404()
+    
+    example_questions = []
+    # ▼▼▼ customer_data から user を取得するように変更 ▼▼▼
+    if customer_data.plan == 'professional' or (customer_data.user and customer_data.user.is_admin):
+        example_questions = customer_data.example_questions.order_by(ExampleQuestion.id.asc()).all()
+    
+    return render_template('chatbot_page.html', data=customer_data, example_questions=example_questions)
 
     def get_gemini_response(customer_data, user_message, session_id):
         bot_name = customer_data.bot_name or "アシスタント"

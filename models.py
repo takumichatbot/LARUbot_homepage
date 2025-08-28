@@ -4,8 +4,13 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timezone
 from flask import current_app
 from itsdangerous import URLSafeTimedSerializer as Serializer
+import uuid # ▼▼▼ uuidを新しくインポートします ▼▼▼
 
 db = SQLAlchemy()
+
+# ▼▼▼ UUIDを扱うためのカスタム型を追加します ▼▼▼
+from sqlalchemy.dialects.postgresql import UUID
+# ▲▲▲ ここまで追加 ▲▲▲
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -40,6 +45,11 @@ class User(UserMixin, db.Model):
 
 class CustomerData(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    
+    # ▼▼▼ 以下の1行を新しく追加します ▼▼▼
+    public_id = db.Column(UUID(as_uuid=True), unique=True, nullable=False, default=uuid.uuid4)
+    # ▲▲▲ ここまで追加 ▲▲▲
+
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, unique=True)
     bot_name = db.Column(db.String(100), default='My Chatbot')
     welcome_message = db.Column(db.String(500), default='こんにちは！何かご質問はありますか？')
@@ -52,10 +62,7 @@ class CustomerData(db.Model):
     onboarding_completed = db.Column(db.Boolean, nullable=False, default=False)
     enable_weekly_report = db.Column(db.Boolean, nullable=False, default=True)
     report_day_of_week = db.Column(db.Integer, nullable=False, default=1)
-
-    # ▼▼▼ 以下の1行を新しく追加します ▼▼▼
     uncertain_reply = db.Column(db.String(500), nullable=False, default='申し訳ありませんが、わかりかねます。')
-    # ▲▲▲ ここまで追加 ▲▲▲
 
     qas = db.relationship('QA', backref='customer_data', lazy='dynamic', cascade="all, delete-orphan")
     logs = db.relationship('ConversationLog', backref='customer_data', lazy='dynamic', cascade="all, delete-orphan")
