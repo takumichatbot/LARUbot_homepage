@@ -782,19 +782,19 @@ def create_app(config_class=DevelopmentConfig):
 app = create_app()
 
 @app.route('/features/carousel')
-    def feature_carousel():
+def feature_carousel():
         return render_template('features/carousel.html')
 
 @app.route('/features/ai-dialogue')
-    def feature_ai_dialogue():
+def feature_ai_dialogue():
         return render_template('features/ai_dialogue.html')
 
 @app.route('/features/log-analysis')
-    def feature_log_analysis():
+def feature_log_analysis():
         return render_template('features/log_analysis.html')
 
 @app.route('/features/line-integration')
-    def feature_line_integration():
+def feature_line_integration():
         return render_template('features/line_integration.html')
 
 
