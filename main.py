@@ -113,7 +113,6 @@ def create_app(config_class=DevelopmentConfig):
         mail.send(msg)
 
     def convert_urls_to_links(text):
-        """テキスト内のURLをHTMLのaタグに変換する"""
         url_pattern = re.compile(r'(https?://[^\s]+)')
         return url_pattern.sub(r'<a href="\g<0>" target="_blank" class="text-sky-600 hover:underline">\g<0></a>', text)
     
@@ -297,15 +296,12 @@ def create_app(config_class=DevelopmentConfig):
         qas = current_user.customer_data.qas.order_by(QA.id.desc()).all()
         return render_template('qa_management.html', qas=qas, user=current_user)
 
-    # ▼▼▼ add_qa関数に制限ロジックを追加します ▼▼▼
     @app.route('/qa/add', methods=['POST'])
     @login_required
     def add_qa():
         customer_data = current_user.customer_data
         
-        # 管理者(is_admin)ではなく、プロフェッショナルプランでもない場合
         if not current_user.is_admin and customer_data.plan != 'professional':
-            # 現在のQ&A登録数が100件以上の場合
             if customer_data.qas.count() >= 100:
                 flash('スタータープランのQ&A登録上限数（100件）に達しました。無制限に登録するには、プロフェッショナルプランへのアップグレードをご検討ください。', 'warning')
                 return redirect(url_for('qa_management'))
@@ -321,7 +317,6 @@ def create_app(config_class=DevelopmentConfig):
         else:
             flash('質問と回答の両方を入力してください。', 'danger')
         return redirect(url_for('qa_management'))
-    # ▲▲▲ ここまで修正 ▲▲▲
 
     @app.route('/qa/delete/<int:qa_id>', methods=['POST'])
     @login_required
@@ -354,7 +349,6 @@ def create_app(config_class=DevelopmentConfig):
         questions = current_user.customer_data.example_questions.order_by(ExampleQuestion.id.asc()).all()
         return render_template('example_questions.html', example_questions=questions, user=current_user)
 
-    # ▼▼▼ add_example_question関数に制限ロジックを追加します ▼▼▼
     @app.route('/example-questions/add', methods=['POST'])
     @login_required
     @professional_plan_required
@@ -368,7 +362,6 @@ def create_app(config_class=DevelopmentConfig):
                 
         text = request.form.get('text', '').strip()
         if text:
-            # 既存の登録上限チェックはプロフェッショナルプラン向けに残す
             if customer_data.plan == 'professional' and customer_data.example_questions.count() >= 10:
                  flash('質問例は最大10個まで登録できます。', 'warning')
                  return redirect(url_for('manage_example_questions'))
@@ -378,7 +371,6 @@ def create_app(config_class=DevelopmentConfig):
             db.session.commit()
             flash('新しい質問例を追加しました。', 'success')
         return redirect(url_for('manage_example_questions'))
-    # ▲▲▲ ここまで修正 ▲▲▲
 
     @app.route('/example-questions/delete/<int:eq_id>', methods=['POST'])
     @login_required
@@ -393,12 +385,10 @@ def create_app(config_class=DevelopmentConfig):
             abort(403)
         return redirect(url_for('manage_example_questions'))
 
-    # ▼▼▼ manage_menu_items関数に制限ロジックを追加します ▼▼▼
     @app.route('/menu_management', methods=['GET', 'POST'])
     @login_required
     def manage_menu_items():
-        customer_data = current_user.customer_data # 先に定義
-
+        customer_data = current_user.customer_data
         if request.method == 'POST':
             if not current_user.is_admin and customer_data.plan != 'professional':
                 if len(customer_data.menu_items) >= 3:
@@ -435,9 +425,8 @@ def create_app(config_class=DevelopmentConfig):
                 flash('タイトルと説明は必須です。', 'danger')
             return redirect(url_for('manage_menu_items'))
 
-        menu_items = MenuItem.query.filter_by(customer_data_id=customer_data.id).order_by(MenuItem.created_at.desc()).all()
+        menu_items = MenuItem.query.filter_by(customer_data_id=current_user.customer_data.id).order_by(MenuItem.created_at.desc()).all()
         return render_template('menu_management.html', menu_items=menu_items, user=current_user)
-    # ▲▲▲ ここまで修正 ▲▲▲
 
     @app.route('/menu/delete/<int:item_id>', methods=['POST'])
     @login_required
@@ -479,6 +468,7 @@ def create_app(config_class=DevelopmentConfig):
         stripe_starter_price_id=stripe_starter_price_id,
         stripe_pro_price_id=stripe_pro_price_id
     )
+
     @app.route('/terms')
     def terms_of_service():
         return render_template('terms.html')
@@ -486,6 +476,24 @@ def create_app(config_class=DevelopmentConfig):
     @app.route('/privacy')
     def privacy_policy():
         return render_template('privacy.html')
+    
+    # ▼▼▼ 機能詳細ページのルートをここから追加します ▼▼▼
+    @app.route('/features/carousel')
+    def feature_carousel():
+        return render_template('features/carousel.html')
+
+    @app.route('/features/ai-dialogue')
+    def feature_ai_dialogue():
+        return render_template('features/ai_dialogue.html')
+
+    @app.route('/features/log-analysis')
+    def feature_log_analysis():
+        return render_template('features/log_analysis.html')
+
+    @app.route('/features/line-integration')
+    def feature_line_integration():
+        return render_template('features/line_integration.html')
+    # ▲▲▲ ここまで追加 ▲▲▲
 
     @app.route('/contact', methods=['POST'])
     def contact():
@@ -656,7 +664,7 @@ def create_app(config_class=DevelopmentConfig):
             db.session.rollback()
             print(f"ログ保存エラー: {e}")
 
-            linked_answer = convert_urls_to_links(answer)
+        linked_answer = convert_urls_to_links(answer)
         return jsonify({"answer": linked_answer})
 
     
@@ -780,23 +788,6 @@ def create_app(config_class=DevelopmentConfig):
     return app
 
 app = create_app()
-
-@app.route('/features/carousel')
-def feature_carousel():
-        return render_template('features/carousel.html')
-
-@app.route('/features/ai-dialogue')
-def feature_ai_dialogue():
-        return render_template('features/ai_dialogue.html')
-
-@app.route('/features/log-analysis')
-def feature_log_analysis():
-        return render_template('features/log_analysis.html')
-
-@app.route('/features/line-integration')
-def feature_line_integration():
-        return render_template('features/line_integration.html')
-
 
 @app.cli.command("make-admin")
 def make_admin_command():
