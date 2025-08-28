@@ -463,10 +463,13 @@ def create_app(config_class=DevelopmentConfig):
     def index():
         stripe_starter_price_id = os.getenv('STRIPE_STARTER_PRICE_ID')
         stripe_pro_price_id = os.getenv('STRIPE_PRO_PRICE_ID')
+        demo_customer = CustomerData.query.filter_by(user_id=1).first()
+        demo_public_id = demo_customer.public_id if demo_customer else None
         return render_template(
         'index.html', 
         stripe_starter_price_id=stripe_starter_price_id,
         stripe_pro_price_id=stripe_pro_price_id
+        demo_public_id=demo_public_id
     )
 
     @app.route('/terms')

@@ -284,8 +284,10 @@
 
 <div class="chat-container">
     <div id="chat-iframe-wrapper" class="chat-iframe-container hidden">
-        <iframe src="{{ url_for('chatbot_page', user_id=1, _external=True) }}" class="w-full h-full border-0" title="LARUbot AI Chatbot"></iframe>
-    </div>
+        {% if demo_public_id %}
+        <iframe src="{{ url_for('chatbot_page', public_id=demo_public_id, _external=True) }}" class="w-full h-full border-0" title="LARUbot AI Chatbot"></iframe>
+        {% endif %}
+        </div>
     <button id="chat-toggle-button" class="chat-button">
         <i id="chat-icon" class="fas fa-comments"></i>
     </button>
