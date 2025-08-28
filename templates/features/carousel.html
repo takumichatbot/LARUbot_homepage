@@ -1,0 +1,37 @@
+{% extends "layout.html" %}
+
+{% block title %}カルーセル機能 - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="bg-white py-12">
+    <div class="container mx-auto px-6">
+        <div class="max-w-4xl mx-auto">
+            <a href="{{ url_for('index') }}#features" class="text-sky-600 hover:underline mb-6 inline-block">&larr; 機能一覧に戻る</a>
+
+            <h1 class="text-4xl font-bold text-gradient mb-4">リッチなカルーセル表示機能</h1>
+            <p class="text-lg text-slate-600 mb-8">写真付きのメニューや商品をLINE上で魅力的に紹介。タップするだけで次のアクションを促し、顧客体験と売上向上に貢献します。</p>
+
+            <img src="{{ url_for('static', filename='images/carousel-icon.png') }}" alt="カルーセル機能のアイコン" class="w-32 h-32 mx-auto mb-8"> {# ここをアイコンに置き換え！ #}
+
+            <div class="space-y-10">
+                <div>
+                    <h2 class="text-2xl font-bold mb-3 text-slate-800">主なメリット</h2>
+                    <ul class="list-disc list-inside space-y-2 text-slate-700">
+                        <li><strong>視覚的なアピール:</strong> テキストだけでは伝わらない商品の魅力を、写真で直感的に伝えられます。</li>
+                        <li><strong>高いクリック率:</strong> ユーザーはタップするだけで良いため、Webサイトへの誘導や予約プロセスへの移行がスムーズになります。</li>
+                        <li><strong>簡単な設定:</strong> 管理画面からタイトル、説明、画像、ボタンのテキストを登録するだけで、複雑な設定は不要です。</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h2 class="text-2xl font-bold mb-3 text-slate-800">設定方法</h2>
+                    <p class="text-slate-700 mb-4">管理画面の「メニュー管理」ページから、簡単にカルーセルに表示する項目を追加・編集できます。</p>
+                    <a href="{{ url_for('manage_menu_items') }}" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-6 rounded-lg transition-colors">
+                        メニュー管理ページへ移動
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

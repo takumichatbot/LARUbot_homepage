@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+
+{% block title %}会話ログ分析 - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="bg-white py-12">
+    <div class="container mx-auto px-6 max-w-4xl">
+        <a href="{{ url_for('index') }}#features" class="text-sky-600 hover:underline mb-6 inline-block">&larr; 機能一覧に戻る</a>
+        <h1 class="text-4xl font-bold text-gradient mb-4">会話ログ分析</h1>
+        <p class="text-lg text-slate-600 mb-8">AIが答えられなかった質問を自動でリストアップ。顧客の隠れたニーズを発見し、Q&Aを改善するヒントを得られます。</p>
+        
+        <div class="bg-slate-100 p-8 rounded-lg">
+            <h2 class="text-2xl font-bold text-slate-800">今後のコンテンツ案</h2>
+            <p class="mt-2 text-slate-600">ここに、「会話分析」ページのスクリーンショットを掲載し、どのように改善点が見つかるかを解説すると効果的です。</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

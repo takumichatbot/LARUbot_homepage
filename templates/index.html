@@ -22,6 +22,11 @@
         .feature-card:hover { transform: translateY(-10px) scale(1.03); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
         .faq-question { cursor: pointer; }
         .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-in-out; }
+        .step-card::after { content: ''; position: absolute; top: 3.5rem; right: -2.5rem; width: calc(100% - 2.5rem); height: 2px; background-image: linear-gradient(to right, #e2e8f0 50%, transparent 50%); background-size: 16px 2px; z-index: 0; }
+        .step-card:last-child::after { display: none; }
+        @media (max-width: 767px) { .step-card::after { display: none; } }
+        /* フローティングチャット用のスタイル */
+        .chat-container{position:fixed;bottom:24px;right:24px;z-index:1000;display:flex;flex-direction:column;align-items:flex-end}.chat-iframe-container{width:360px;height:540px;max-height:calc(100vh - 100px);background-color:#fff;border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,.15);overflow:hidden;margin-bottom:16px;transition:transform .3s ease-out,opacity .3s ease-out;transform-origin:bottom right}.chat-iframe-container.hidden{opacity:0;transform:scale(.9);pointer-events:none}.chat-button{width:60px;height:60px;background-color:#0ea5e9;color:#fff;border-radius:50%;box-shadow:0 4px 12px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;font-size:1.75rem;cursor:pointer;transition:all .3s ease-in-out}.chat-button:hover{background-color:#0284c7;transform:scale(1.1)}
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -30,10 +35,10 @@
     <div class="container mx-auto px-6 py-3 flex justify-between items-center">
         <a href="{{ url_for('index') }}" class="text-3xl font-bold text-gradient">LARUbot</a>
         <nav class="hidden lg:flex items-center space-x-6">
+            <a href="#steps" class="text-slate-600 hover:text-sky-500">導入の流れ</a>
             <a href="#features" class="text-slate-600 hover:text-sky-500">機能</a>
             <a href="#plans" class="text-slate-600 hover:text-sky-500">料金プラン</a>
             <a href="#faq" class="text-slate-600 hover:text-sky-500">よくある質問</a>
-            <a href="#contact" class="text-slate-600 hover:text-sky-500">お問い合わせ</a>
         </nav>
         <div class="hidden lg:flex items-center space-x-4">
             <a href="{{ url_for('login') }}" class="text-slate-600 hover:text-sky-500 font-medium transition-colors">ログイン</a>
@@ -42,10 +47,10 @@
         <button id="mobile-menu-button" class="lg:hidden text-2xl text-slate-600"><i class="fas fa-bars"></i></button>
     </div>
     <div id="mobile-menu" class="hidden lg:hidden bg-white shadow-lg py-4">
+        <a href="#steps" class="block py-2 px-6 text-slate-600 hover:text-sky-500">導入の流れ</a>
         <a href="#features" class="block py-2 px-6 text-slate-600 hover:text-sky-500">機能</a>
         <a href="#plans" class="block py-2 px-6 text-slate-600 hover:text-sky-500">料金プラン</a>
         <a href="#faq" class="block py-2 px-6 text-slate-600 hover:text-sky-500">よくある質問</a>
-        <a href="#contact" class="block py-2 px-6 text-slate-600 hover:text-sky-500">お問い合わせ</a>
         <div class="border-t mt-4 pt-4 px-6 space-y-4">
             <a href="{{ url_for('register') }}" class="block w-full text-center text-white bg-sky-500 hover:bg-sky-600 px-5 py-2 rounded-full font-bold">無料で始める</a>
             <a href="{{ url_for('login') }}" class="block w-full text-center text-slate-600 bg-slate-100 hover:bg-slate-200 px-5 py-2 rounded-full font-medium">ログイン</a>
@@ -72,7 +77,39 @@
             </div>
         </div>
     </section>
-    
+
+    <section id="steps" class="py-24 bg-white">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold mb-4">驚くほど簡単。<span class="text-gradient">3ステップ</span>で導入完了</h2>
+                <p class="text-slate-600 text-lg">プログラミングの知識は一切不要。誰でもすぐに始められます。</p>
+            </div>
+            <div class="relative grid md:grid-cols-3 gap-10">
+                <div class="relative bg-slate-50 p-8 rounded-2xl text-center animate-on-scroll">
+                    <div class="relative z-10">
+                        <div class="w-20 h-20 mx-auto mb-6 bg-sky-100 text-sky-600 rounded-full flex items-center justify-center text-3xl font-bold">1</div>
+                        <h3 class="text-2xl font-bold mb-3">無料アカウント登録</h3>
+                        <p class="text-slate-600">メールアドレスとパスワードだけで、すぐに利用を開始できます。</p>
+                    </div>
+                </div>
+                <div class="relative bg-slate-50 p-8 rounded-2xl text-center animate-on-scroll step-card" style="transition-delay: 200ms;">
+                    <div class="relative z-10">
+                        <div class="w-20 h-20 mx-auto mb-6 bg-sky-100 text-sky-600 rounded-full flex items-center justify-center text-3xl font-bold">2</div>
+                        <h3 class="text-2xl font-bold mb-3">Q&Aを学習させる</h3>
+                        <p class="text-slate-600">管理画面から、お店の基本情報やよくある質問を登録します。</p>
+                    </div>
+                </div>
+                <div class="relative bg-slate-50 p-8 rounded-2xl text-center animate-on-scroll step-card" style="transition-delay: 400ms;">
+                    <div class="relative z-10">
+                        <div class="w-20 h-20 mx-auto mb-6 bg-sky-100 text-sky-600 rounded-full flex items-center justify-center text-3xl font-bold">3</div>
+                        <h3 class="text-2xl font-bold mb-3">サイトやLINEに設置</h3>
+                        <p class="text-slate-600">発行されたコードを埋め込むだけで、すぐにチャットが動き出します。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <section id="features" class="py-24">
         <div class="container mx-auto px-6">
             <div class="text-center mb-16">
@@ -80,16 +117,28 @@
                 <p class="text-slate-600 text-lg">現場で本当に「使える」機能が、LARUbotには揃っています。</p>
             </div>
             <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <div class="bg-white p-6 rounded-lg shadow-md"><div class="flex items-center space-x-4"><i class="fa-solid fa-brain text-sky-500 text-2xl w-8 text-center"></i><div><h4 class="font-bold text-lg">Gemini AIによる高品質な対話</h4><p class="text-sm text-slate-500">最先端AIが文脈を理解し、人間らしい自然な会話を実現します。</p></div></div></div>
-                <div class="bg-white p-6 rounded-lg shadow-md"><div class="flex items-center space-x-4"><i class="fa-solid fa-list-check text-indigo-500 text-2xl w-8 text-center"></i><div><h4 class="font-bold text-lg">Q&Aの簡単登録・管理</h4><p class="text-sm text-slate-500">管理画面からQ&Aを登録するだけで、AIが自動で学習します。</p></div></div></div>
-                <div class="bg-white p-6 rounded-lg shadow-md"><div class="flex items-center space-x-4"><i class="fa-solid fa-images text-pink-500 text-2xl w-8 text-center"></i><div><h4 class="font-bold text-lg">カルーセルメニュー表示</h4><p class="text-sm text-slate-500">写真付きのメニューをLINE上で表示し、顧客体験を向上させます。</p></div></div></div>
-                <div class="bg-white p-6 rounded-lg shadow-md"><div class="flex items-center space-x-4"><i class="fa-solid fa-lightbulb text-amber-500 text-2xl w-8 text-center"></i><div><h4 class="font-bold text-lg">会話ログからの改善提案</h4><p class="text-sm text-slate-500">AIが答えられなかった質問を分析し、ボットの改善点を可視化します。</p></div></div></div>
-                <div class="bg-white p-6 rounded-lg shadow-md"><div class="flex items-center space-x-4"><i class="fa-solid fa-envelope-open-text text-emerald-500 text-2xl w-8 text-center"></i><div><h4 class="font-bold text-lg">週次レポート通知</h4><p class="text-sm text-slate-500">一週間の利用状況をメールで自動報告。成果を簡単に見える化します。</p></div></div></div>
-                <div class="bg-white p-6 rounded-lg shadow-md"><div class="flex items-center space-x-4"><i class="fa-brands fa-line text-green-500 text-2xl w-8 text-center"></i><div><h4 class="font-bold text-lg">LINE公式アカウント連携</h4><p class="text-sm text-slate-500">使い慣れたLINEのインターフェースで自動応答を実現します。</p></div></div></div>
+                <div class="bg-white p-8 rounded-2xl shadow-lg flex flex-col text-center feature-card ...">
+                    <i class="fas fa-brain ..."></i>
+                    <h3 class="text-2xl font-bold mb-3">AIによる高品質な対話</h3>
+                    <p class="text-slate-600 flex-grow">最先端AIが文脈や過去の会話を記憶し、人間らしい自然な会話を実現。顧客満足度を飛躍的に向上させます。</p>
+                    <a href="{{ url_for('feature_ai_dialogue') }}" class="text-sky-600 font-bold mt-6 hover:underline">詳しく見る <i class="fas fa-arrow-right ml-1"></i></a>
+                </div>
+                <div class="bg-white p-8 rounded-2xl shadow-lg flex flex-col text-center feature-card ...">
+                    <i class="fas fa-images ..."></i>
+                    <h3 class="text-2xl font-bold mb-3">リッチなカルーセル表示</h3>
+                    <p class="text-slate-600 flex-grow">写真付きのメニューや商品をLINE上で魅力的に紹介。タップするだけで次のアクションを促し、売上向上に貢献します。</p>
+                    <a href="{{ url_for('feature_carousel') }}" class="text-sky-600 font-bold mt-6 hover:underline">詳しく見る <i class="fas fa-arrow-right ml-1"></i></a>
+                </div>
+                <div class="bg-white p-8 rounded-2xl shadow-lg flex flex-col text-center feature-card ...">
+                    <i class="fas fa-chart-pie ..."></i>
+                    <h3 class="text-2xl font-bold mb-3">会話ログ分析</h3>
+                    <p class="text-slate-600 flex-grow">AIが答えられなかった質問を自動でリストアップ。顧客の隠れたニーズを発見し、Q&Aを改善するヒントを得られます。</p>
+                    <a href="{{ url_for('feature_log_analysis') }}" class="text-sky-600 font-bold mt-6 hover:underline">詳しく見る <i class="fas fa-arrow-right ml-1"></i></a>
+                </div>
             </div>
         </div>
     </section>
-
+    
     <section id="plans" class="bg-slate-100 py-24">
         <div class="container mx-auto px-6">
             <div class="text-center mb-16">
@@ -186,6 +235,23 @@
             </form>
         </div>
     </section>
+    
+    <section id="company" class="py-24">
+        <div class="container mx-auto px-6 max-w-3xl">
+            <h2 class="text-4xl font-bold text-center mb-12">事業概要</h2>
+            <div class="bg-white shadow-md rounded-lg p-8">
+                <ul class="space-y-4 text-slate-700">
+                    <li><strong>事業者名:</strong> LARUbot</li>
+                    <li><strong>所在地:</strong> 〒170-0005 東京都豊島区南大塚１丁目２２−２</li>
+                    <li><strong>事業内容:</strong> AIチャットボットの開発・提供、ウェブサイト制作、システム開発</li>
+                    <li><strong>お問い合わせ:</strong>
+                        <a href="mailto:larubotchatbot@gmail.com" class="text-sky-500 hover:underline">larubotchatbot@gmail.com</a> / 
+                        <a href="tel:05017248283" class="text-sky-500 hover:underline">050-1724-8283</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </section>
 </main>
 
 <footer class="bg-gray-800 text-white py-12">
@@ -205,6 +271,15 @@
     </div>
 </footer>
 
+<div class="chat-container">
+    <div id="chat-iframe-wrapper" class="chat-iframe-container hidden">
+        <iframe src="{{ url_for('chatbot_page', user_id=1, _external=True) }}" class="w-full h-full border-0" title="LARUbot AI Chatbot"></iframe>
+    </div>
+    <button id="chat-toggle-button" class="chat-button">
+        <i id="chat-icon" class="fas fa-comments"></i>
+    </button>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // Mobile menu toggle
@@ -223,7 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelector(this.getAttribute('href')).scrollIntoView({
                 behavior: 'smooth'
             });
-            if (!mobileMenu.classList.contains('hidden')) {
+            if (mobileMenu && !mobileMenu.classList.contains('hidden')) {
                 mobileMenu.classList.add('hidden');
             }
         });
@@ -297,6 +372,24 @@ document.addEventListener('DOMContentLoaded', () => {
             submitButton.disabled = false;
         });
     });
+
+    // Floating chat widget
+    const chatToggleButton = document.getElementById('chat-toggle-button');
+    const chatIframeWrapper = document.getElementById('chat-iframe-wrapper');
+    const chatIcon = document.getElementById('chat-icon');
+
+    if (chatToggleButton && chatIframeWrapper && chatIcon) {
+        chatToggleButton.addEventListener('click', () => {
+            chatIframeWrapper.classList.toggle('hidden');
+            if (chatIframeWrapper.classList.contains('hidden')) {
+                chatIcon.classList.remove('fa-times');
+                chatIcon.classList.add('fa-comments');
+            } else {
+                chatIcon.classList.remove('fa-comments');
+                chatIcon.classList.add('fa-times');
+            }
+        });
+    }
 });
 </script>
 

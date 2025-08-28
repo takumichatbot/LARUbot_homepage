@@ -781,6 +781,19 @@ def create_app(config_class=DevelopmentConfig):
 
 app = create_app()
 
+@app.route('/features/carousel')
+    def feature_carousel():
+        return render_template('features/carousel.html')
+
+@app.route('/features/ai-dialogue')
+    def feature_ai_dialogue():
+        return render_template('features/ai_dialogue.html')
+
+@app.route('/features/log-analysis')
+    def feature_log_analysis():
+        return render_template('features/log_analysis.html')
+
+
 @app.cli.command("make-admin")
 def make_admin_command():
     email = input("管理者にしたいユーザーのメールアドレス: ")
