@@ -15,6 +15,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* --- 基本的なページスタイル --- */
         .hero-bg { background: linear-gradient(135deg, #1f2937 0%, #111827 100%); }
         .text-gradient { background: linear-gradient(45deg, #38bdf8, #34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .animate-on-scroll { opacity: 0; transform: translateY(30px); transition: opacity 0.8s ease-out, transform 0.8s ease-out; }
@@ -25,79 +26,174 @@
         .step-card::after { content: ''; position: absolute; top: 3.5rem; right: -2.5rem; width: calc(100% - 2.5rem); height: 2px; background-image: linear-gradient(to right, #e2e8f0 50%, transparent 50%); background-size: 16px 2px; z-index: 0; }
         .step-card:last-child::after { display: none; }
         @media (max-width: 767px) { .step-card::after { display: none; } }
-        /* フローティングチャット用のスタイル - 使いやすさ第一版 */
-.chat-container {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 1000;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-}
 
-.chat-iframe-container {
-    width: 380px;
-    height: 580px;
-    max-height: calc(100vh - 120px);
-    background-color: #ffffff; /* 明るくクリーンな白背景 */
-    border-radius: 16px; /* 親しみやすい角丸 */
-    /* 派手すぎず、浮かび上がって見える自然な影 */
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    border: 1px solid #e2e8f0; /* 境界を明確にするための薄い線 */
-    overflow: hidden;
-    margin-bottom: 16px;
-    /* スムーズで分かりやすいアニメーション */
-    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease-out;
-    transform-origin: bottom right;
-}
+        /* --- ここからチャットボットの新しいスタイル --- */
+        .chat-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
 
-.chat-iframe-container.hidden {
-    opacity: 0;
-    transform: translateY(20px); /* シンプルに少し下がる動き */
-    pointer-events: none;
-}
+        /* チャットウィンドウ本体 */
+        .chat-iframe-container {
+            width: 380px;
+            height: 600px;
+            max-height: calc(100vh - 120px);
+            background-color: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease-out;
+            transform-origin: bottom right;
+        }
 
-.chat-iframe-container iframe {
-    border-radius: 16px;
-}
+        .chat-iframe-container.hidden {
+            opacity: 0;
+            transform: scale(0.95) translateY(20px);
+            pointer-events: none;
+        }
 
-.chat-button {
-    width: 64px;
-    height: 64px;
-    background-color: #3b5998; /* 信頼感のあるプロフェッショナルな青 */
-    color: #fff;
-    border-radius: 50%;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* ボタンを少し浮かせる影 */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.8rem;
-    cursor: pointer;
-    border: none;
-    /* ユーザーの注意を優しく引く、ゆっくりとした鼓動アニメーション */
-    animation: soft-pulse 2.5s infinite ease-in-out;
-    transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
-}
+        /* ヘッダー */
+        .chatbot-header {
+            /* background-color はインラインスタイルで動的に設定 */
+            color: #ffffff;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.1em;
+            flex-shrink: 0;
+        }
 
-.chat-button:hover {
-    transform: scale(1.1);
-    background-color: #324a81; /* ホバー時に少し濃い青に */
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-}
+        /* メッセージ表示エリア */
+        .chatbot-messages {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background-color: #f4f7f9; /* 薄いグレーの背景 */
+        }
 
-/* ボタンの邪魔にならない、さりげない鼓動アニメーション */
-@keyframes soft-pulse {
-    0% {
-        box-shadow: 0 4px 12px rgba(59, 89, 152, 0.2);
-    }
-    50% {
-        box-shadow: 0 4px 20px rgba(59, 89, 152, 0.4);
-    }
-    100% {
-        box-shadow: 0 4px 12px rgba(59, 89, 152, 0.2);
-    }
-}
+        .message {
+            padding: 12px 18px;
+            border-radius: 20px;
+            max-width: 80%;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .bot-message {
+            background-color: #e9ecef; /* ボットの吹き出し色 */
+            color: #333;
+            align-self: flex-start;
+            border-bottom-left-radius: 5px;
+        }
+
+        .user-message {
+            background-color: #3b5998; /* ユーザーの吹き出し色 */
+            color: #ffffff;
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
+        }
+        
+        /* 入力フォームエリア */
+        .chatbot-input {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid #e2e8f0;
+            background-color: #ffffff;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .chatbot-input input {
+            flex-grow: 1;
+            border: 1px solid #ccc;
+            border-radius: 25px;
+            padding: 10px 18px;
+            font-size: 1em;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .chatbot-input input:focus {
+            border-color: #3b5998;
+        }
+
+        .chatbot-input button {
+            background-color: #3b5998;
+            color: #fff;
+            border: none;
+            border-radius: 25px;
+            padding: 10px 25px;
+            margin-left: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .chatbot-input button:hover {
+            background-color: #324a81;
+        }
+
+        /* チャットを開くボタン */
+        .chat-button {
+            width: 64px;
+            height: 64px;
+            background-color: #3b5998;
+            color: #fff;
+            border-radius: 50%;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            cursor: pointer;
+            border: none;
+            transition: all .3s;
+        }
+
+        .chat-button:hover {
+            transform: scale(1.1);
+            background-color: #324a81;
+        }
+        
+        /* 質問例ボタンコンテナ */
+        .example-questions-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 0 10px 10px; /* 上左右、下 */
+            align-items: stretch;
+        }
+
+        /* 質問例ボタン */
+        .example-btn {
+            background-color: #fff;
+            color: #3b5998;
+            border: 1px solid #3b5998;
+            border-radius: 20px;
+            padding: 10px 15px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .example-btn:hover {
+            background-color: #f0f2f5;
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -355,18 +451,30 @@
 
 <div class="chat-container">
     <div id="chat-iframe-wrapper" class="chat-iframe-container hidden">
-        {% if demo_public_id %}
-        <iframe src="https://larubot.tokyo/chatbot/c8188085-1e18-4f86-a8e6-4c44dee42146" class="w-full h-full border-0" title="LARUbot AI Chatbot"></iframe>
-        {% endif %}
+        <div class="chatbot-header" style="background-color: {{ chatbot_settings.header_color | default('#2c3e50', true) }};">
+            {{ chatbot_settings.bot_name | default('LARUbot', true) }}
         </div>
+        <div class="chatbot-messages" id="chatbot-messages">
+            <div class="example-questions-container" id="example-questions">
+                <button class="example-btn">料金プランについて</button>
+                <button class="example-btn">導入の流れ</button>
+            </div>
+            <div class="message bot-message">
+                {{ chatbot_settings.welcome_message | default('こんにちは！LARUbot(ラルボット)です！何か質問はありますか？(プラン説明や導入までの流れなど)', true) }}
+            </div>
+        </div>
+        <div class="chatbot-input">
+            <input type="text" id="user-input" placeholder="メッセージを入力..." autocomplete="off">
+            <button id="send-btn">送信</button>
+        </div>
+    </div>
     <button id="chat-toggle-button" class="chat-button">
         <i id="chat-icon" class="fas fa-comments"></i>
     </button>
 </div>
-
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // Mobile menu toggle
+    // --- ページ全体の基本スクリプト ---
     const mobileMenuButton = document.getElementById('mobile-menu-button');
     const mobileMenu = document.getElementById('mobile-menu');
     if (mobileMenuButton && mobileMenu) {
@@ -374,8 +482,6 @@ document.addEventListener('DOMContentLoaded', () => {
             mobileMenu.classList.toggle('hidden');
         });
     }
-
-    // Smooth scroll for nav links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
             e.preventDefault();
@@ -387,8 +493,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
-
-    // Animate on scroll
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -400,8 +504,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.animate-on-scroll').forEach(el => {
         observer.observe(el);
     });
-
-    // FAQ Accordion
     document.querySelectorAll('.faq-question').forEach(question => {
         question.addEventListener('click', () => {
             const answer = question.nextElementSibling;
@@ -421,51 +523,50 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
-
-    // Contact Form Submission
     const contactForm = document.getElementById('contact-form-element');
     const formResult = document.getElementById('form-result');
     const submitButton = document.getElementById('submit-button');
-
-    contactForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const formData = new FormData(this);
-        const originalButtonText = submitButton.innerHTML;
-        submitButton.innerHTML = '送信中...';
-        submitButton.disabled = true;
-
-        fetch("{{ url_for('contact') }}", {
-            method: 'POST',
-            body: formData,
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                formResult.innerHTML = `<div class="p-4 mb-4 text-sm text-green-700 bg-green-100 rounded-lg" role="alert">${data.message}</div>`;
-                contactForm.reset();
-            } else {
-                formResult.innerHTML = `<div class="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg" role="alert">${data.message}</div>`;
-            }
-        })
-        .catch(error => {
-            formResult.innerHTML = `<div class="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg" role="alert">送信中にエラーが発生しました。</div>`;
-            console.error('Error:', error);
-        })
-        .finally(() => {
-            submitButton.innerHTML = originalButtonText;
-            submitButton.disabled = false;
+    if(contactForm) {
+        contactForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const originalButtonText = submitButton.innerHTML;
+            submitButton.innerHTML = '送信中...';
+            submitButton.disabled = true;
+            fetch("{{ url_for('contact') }}", {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    formResult.innerHTML = `<div class="p-4 mb-4 text-sm text-green-700 bg-green-100 rounded-lg" role="alert">${data.message}</div>`;
+                    contactForm.reset();
+                } else {
+                    formResult.innerHTML = `<div class="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg" role="alert">${data.message}</div>`;
+                }
+            })
+            .catch(error => {
+                formResult.innerHTML = `<div class="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg" role="alert">送信中にエラーが発生しました。</div>`;
+                console.error('Error:', error);
+            })
+            .finally(() => {
+                submitButton.innerHTML = originalButtonText;
+                submitButton.disabled = false;
+            });
         });
-    });
+    }
 
-    // Floating chat widget
+
+    // --- ここからチャットボットの新しいスクリプト ---
     const chatToggleButton = document.getElementById('chat-toggle-button');
-    const chatIframeWrapper = document.getElementById('chat-iframe-wrapper');
+    const chatWindow = document.getElementById('chat-iframe-wrapper');
     const chatIcon = document.getElementById('chat-icon');
 
-    if (chatToggleButton && chatIframeWrapper && chatIcon) {
+    if (chatToggleButton && chatWindow && chatIcon) {
         chatToggleButton.addEventListener('click', () => {
-            chatIframeWrapper.classList.toggle('hidden');
-            if (chatIframeWrapper.classList.contains('hidden')) {
+            chatWindow.classList.toggle('hidden');
+            if (chatWindow.classList.contains('hidden')) {
                 chatIcon.classList.remove('fa-times');
                 chatIcon.classList.add('fa-comments');
             } else {
@@ -474,6 +575,92 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    const messagesContainer = document.getElementById('chatbot-messages');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+    const exampleQuestionsContainer = document.getElementById('example-questions');
+
+    let sessionId = sessionStorage.getItem('chatbot_session_id');
+    if (!sessionId) {
+        sessionId = Date.now().toString() + Math.random().toString(36).substring(2);
+        sessionStorage.setItem('chatbot_session_id', sessionId);
+    }
+
+    const handleSendMessage = async () => {
+        const text = userInput.value.trim();
+        if (text === '') return;
+
+        const userMessageDiv = document.createElement('div');
+        userMessageDiv.className = 'message user-message';
+        userMessageDiv.textContent = text;
+        messagesContainer.appendChild(userMessageDiv);
+        userInput.value = '';
+        if (exampleQuestionsContainer) {
+            exampleQuestionsContainer.style.display = 'none';
+        }
+        
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = 'message bot-message';
+        loadingDiv.textContent = '...';
+        loadingDiv.id = 'loading-indicator';
+        messagesContainer.appendChild(loadingDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+        try {
+            const response = await fetch('/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text, session_id: sessionId }),
+            });
+
+            const data = await response.json();
+            const botReply = data.reply;
+
+            document.getElementById('loading-indicator')?.remove();
+
+            const botMessageDiv = document.createElement('div');
+            botMessageDiv.className = 'message bot-message';
+            botMessageDiv.textContent = botReply;
+            messagesContainer.appendChild(botMessageDiv);
+
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('loading-indicator')?.remove();
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'message bot-message';
+            errorDiv.textContent = 'エラーが発生しました。時間をおいて再度お試しください。';
+            messagesContainer.appendChild(errorDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+    };
+    
+    const handleExampleButtonClick = (event) => {
+        const button = event.target;
+        const question = button.textContent;
+        userInput.value = question;
+        handleSendMessage();
+        
+        const container = button.closest('.example-questions-container');
+        if (container) {
+            container.style.display = 'none';
+        }
+    };
+
+    document.querySelectorAll('.example-btn').forEach(button => {
+        button.addEventListener('click', handleExampleButtonClick);
+    });
+    
+    sendBtn.addEventListener('click', handleSendMessage);
+
+    userInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            handleSendMessage();
+        }
+    });
 });
 </script>
 

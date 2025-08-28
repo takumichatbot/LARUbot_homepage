@@ -466,12 +466,15 @@ def create_app(config_class=DevelopmentConfig):
         demo_customer = CustomerData.query.filter_by(user_id=1).first()
         demo_public_id = demo_customer.public_id if demo_customer else None
         
+        # ▼▼▼ ここが変更点 ▼▼▼
         return render_template(
             'index.html', 
             stripe_starter_price_id=stripe_starter_price_id,
             stripe_pro_price_id=stripe_pro_price_id,
-            demo_public_id=demo_public_id
+            demo_public_id=demo_public_id,
+            chatbot_settings=demo_customer  # 設定情報をテンプレートに渡す
         )
+        # ▲▲▲ ここまで ▲▲▲
 
     @app.route('/terms')
     def terms_of_service():
@@ -481,7 +484,6 @@ def create_app(config_class=DevelopmentConfig):
     def privacy_policy():
         return render_template('privacy.html')
     
-    # ▼▼▼ 機能詳細ページのルートをここから追加します ▼▼▼
     @app.route('/features/carousel')
     def feature_carousel():
         return render_template('features/carousel.html', user=current_user)
@@ -497,7 +499,6 @@ def create_app(config_class=DevelopmentConfig):
     @app.route('/features/line-integration')
     def feature_line_integration():
         return render_template('features/line_integration.html', user=current_user)
-    # ▲▲▲ ここまで追加 ▲▲▲
 
     @app.route('/contact', methods=['POST'])
     def contact():
@@ -561,6 +562,20 @@ def create_app(config_class=DevelopmentConfig):
                 user.customer_data.stripe_customer_id = session.get('customer')
                 db.session.commit()
         return 'Success', 200
+
+    @app.route('/chat', methods=['POST'])
+    def chat():
+        data = request.get_json()
+        user_message = data.get('message', '')
+        session_id = data.get('session_id', 'default_session')
+
+        customer_data = CustomerData.query.filter_by(user_id=1).first()
+        if not customer_data:
+            return jsonify({'reply': 'デモ用の顧客データが見つかりません。'})
+
+        bot_reply = get_gemini_response(customer_data, user_message, session_id)
+        
+        return jsonify({'reply': bot_reply})
 
     @app.route('/chatbot/<string:public_id>')
     def chatbot_page(public_id):
