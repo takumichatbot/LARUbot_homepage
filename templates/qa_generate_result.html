@@ -1,0 +1,44 @@
+{% extends "layout.html" %}
+
+{% block title %}生成されたQ&Aの確認 - {{ super() }}{% endblock %}
+
+{% block page_header %}
+    <h1 class="text-xl font-semibold text-slate-800">生成されたQ&Aの確認</h1>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <div class="bg-white p-6 rounded-xl shadow-md">
+        <h2 class="text-lg font-bold mb-4 text-slate-800">AIが生成したQ&A候補</h2>
+        <p class="mb-6 text-slate-600">内容を確認し、登録したいQ&Aにチェックを入れて「選択したQ&Aを保存」ボタンを押してください。</p>
+        
+        <form action="{{ url_for('save_generated_qas') }}" method="POST">
+            <div class="space-y-4 mb-6">
+                {% for qa in generated_qas %}
+                <div class="border rounded-lg p-4 bg-slate-50">
+                    <div class="flex items-start">
+                        <input type="checkbox" name="selected_qa" value="{{ loop.index0 }}" checked class="h-5 w-5 mt-1 text-sky-600 border-gray-300 rounded focus:ring-sky-500">
+                        <div class="ml-4 flex-grow">
+                            <label class="font-semibold text-slate-800 block">質問 (Q)</label>
+                            <input type="text" name="question_{{ loop.index0 }}" value="{{ qa.question }}" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                            
+                            <label class="font-semibold text-slate-800 block mt-2">回答 (A)</label>
+                            <textarea name="answer_{{ loop.index0 }}" rows="3" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">{{ qa.answer }}</textarea>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="flex justify-end space-x-4">
+                <a href="{{ url_for('qa_management') }}" class="py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    キャンセル
+                </a>
+                <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-sky-600 hover:bg-sky-700">
+                    <i class="fas fa-save mr-2"></i> 選択したQ&Aを保存
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

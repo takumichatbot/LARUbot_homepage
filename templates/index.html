@@ -88,14 +88,14 @@
         }
 
         .bot-message {
-            background-color: #e9ecef;
+            /* background-color はJSで動的に設定 */
             color: #333;
             align-self: flex-start;
             border-bottom-left-radius: 5px;
         }
 
         .user-message {
-            background-color: #3b5998;
+            /* background-color はJSで動的に設定 */
             color: #ffffff;
             align-self: flex-end;
             border-bottom-right-radius: 5px;
@@ -187,16 +187,15 @@
             transform: translateY(-2px);
         }
 
-        /* ▼▼▼ カルーセル用の新しいCSS ▼▼▼ */
         .carousel-container {
             display: flex;
             overflow-x: auto;
             scroll-snap-type: x mandatory;
             gap: 15px;
-            padding-bottom: 15px; /* スクロールバーのための余白 */
+            padding-bottom: 15px;
         }
         .carousel-card {
-            flex: 0 0 250px; /* カードの幅を固定 */
+            flex: 0 0 250px;
             scroll-snap-align: start;
             background-color: #fff;
             border-radius: 12px;
@@ -222,7 +221,7 @@
             font-size: 0.9em;
             color: #666;
             margin-bottom: 15px;
-            height: 4.5em; /* 3行分の高さを確保 */
+            height: 4.5em;
             overflow: hidden;
         }
         .carousel-action-btn {
@@ -239,7 +238,6 @@
         .carousel-action-btn:hover {
             background-color: #324a81;
         }
-        /* ▲▲▲ ここまで ▲▲▲ */
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -508,7 +506,7 @@
                     {% endfor %}
                 {% endif %}
             </div>
-            <div class="message bot-message">
+            <div class="message bot-message" style="background-color: {{ chatbot_settings.bot_message_color | default('#e9ecef', true) }};">
                 {{ chatbot_settings.welcome_message | default('こんにちは！LARUbot(ラルボット)です！何か質問はありますか？(プラン説明や導入までの流れなど)', true) }}
             </div>
         </div>
@@ -630,49 +628,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const sendBtn = document.getElementById('send-btn');
     const exampleQuestionsContainer = document.getElementById('example-questions');
 
+    const userBubbleColor = "{{ chatbot_settings.user_message_color | default('#3b5998', true) }}";
+    const botBubbleColor = "{{ chatbot_settings.bot_message_color | default('#e9ecef', true) }}";
+
     let sessionId = sessionStorage.getItem('chatbot_session_id');
     if (!sessionId) {
         sessionId = Date.now().toString() + Math.random().toString(36).substring(2);
         sessionStorage.setItem('chatbot_session_id', sessionId);
     }
-    
-    // ▼▼▼ カルーセルを生成する新しい関数 ▼▼▼
-    const renderCarousel = (items) => {
-        const carouselContainer = document.createElement('div');
-        carouselContainer.className = 'carousel-container';
-
-        items.forEach(item => {
-            const card = document.createElement('div');
-            card.className = 'carousel-card';
-
-            let imageHtml = '';
-            if (item.image_url) {
-                imageHtml = `<img src="${item.image_url}" alt="${item.title}">`;
-            }
-
-            card.innerHTML = `
-                ${imageHtml}
-                <div class="carousel-card-content">
-                    <h4>${item.title}</h4>
-                    <p>${item.description}</p>
-                    <button class="carousel-action-btn" data-title="${item.title}">${item.action_text || 'これにする'}</button>
-                </div>
-            `;
-            carouselContainer.appendChild(card);
-        });
-
-        messagesContainer.appendChild(carouselContainer);
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-
-        // カルーセル内のボタンにイベントリスナーを設定
-        carouselContainer.querySelectorAll('.carousel-action-btn').forEach(button => {
-            button.addEventListener('click', () => {
-                const title = button.dataset.title;
-                userInput.value = title + "を選択しました。";
-                handleSendMessage();
-            });
-        });
-    };
 
     const handleSendMessage = async () => {
         const text = userInput.value.trim();
@@ -681,6 +644,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const userMessageDiv = document.createElement('div');
         userMessageDiv.className = 'message user-message';
         userMessageDiv.textContent = text;
+        userMessageDiv.style.backgroundColor = userBubbleColor;
         messagesContainer.appendChild(userMessageDiv);
         userInput.value = '';
         if (exampleQuestionsContainer) {
@@ -691,6 +655,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loadingDiv.className = 'message bot-message';
         loadingDiv.textContent = '...';
         loadingDiv.id = 'loading-indicator';
+        loadingDiv.style.backgroundColor = botBubbleColor;
         messagesContainer.appendChild(loadingDiv);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
@@ -702,31 +667,15 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const data = await response.json();
-            let botReply = data.reply;
+            const botReply = data.reply;
 
             document.getElementById('loading-indicator')?.remove();
-            
-            // ▼▼▼ カルーセルを処理するロジック ▼▼▼
-            if (botReply.startsWith('[CAROUSEL]')) {
-                try {
-                    const jsonString = botReply.replace('[CAROUSEL]', '').trim();
-                    const items = JSON.parse(jsonString);
-                    renderCarousel(items);
-                } catch (e) {
-                    console.error("カルーセルの解析に失敗:", e);
-                    // 解析失敗時は通常メッセージとして表示
-                    const botMessageDiv = document.createElement('div');
-                    botMessageDiv.className = 'message bot-message';
-                    botMessageDiv.textContent = "メニューの表示に失敗しました。";
-                    messagesContainer.appendChild(botMessageDiv);
-                }
-            } else {
-                const botMessageDiv = document.createElement('div');
-                botMessageDiv.className = 'message bot-message';
-                botMessageDiv.textContent = botReply;
-                messagesContainer.appendChild(botMessageDiv);
-            }
-            // ▲▲▲ ここまで ▲▲▲
+
+            const botMessageDiv = document.createElement('div');
+            botMessageDiv.className = 'message bot-message';
+            botMessageDiv.textContent = botReply;
+            botMessageDiv.style.backgroundColor = botBubbleColor;
+            messagesContainer.appendChild(botMessageDiv);
 
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
@@ -736,6 +685,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const errorDiv = document.createElement('div');
             errorDiv.className = 'message bot-message';
             errorDiv.textContent = 'エラーが発生しました。時間をおいて再度お試しください。';
+            errorDiv.style.backgroundColor = botBubbleColor;
             messagesContainer.appendChild(errorDiv);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }

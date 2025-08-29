@@ -3,6 +3,8 @@ import json
 import stripe
 import urllib.parse
 import re
+import requests
+from bs4 import BeautifulSoup
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, abort, current_app
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from email_validator import validate_email, EmailNotValidError
@@ -281,6 +283,8 @@ def create_app(config_class=DevelopmentConfig):
             customer_data.welcome_message = request.form.get('welcome_message', 'こんにちは！').strip()[:500]
             customer_data.uncertain_reply = request.form.get('uncertain_reply', '申し訳ありませんが、わかりかねます。').strip()[:500]
             customer_data.header_color = request.form.get('header_color', '#0ea5e9')
+            customer_data.user_message_color = request.form.get('user_message_color', '#3b5998')
+            customer_data.bot_message_color = request.form.get('bot_message_color', '#e9ecef')
             customer_data.line_channel_token = request.form.get('line_channel_token', '').strip()
             customer_data.line_channel_secret = request.form.get('line_channel_secret', '').strip()
             customer_data.enable_weekly_report = 'enable_weekly_report' in request.form
@@ -295,6 +299,96 @@ def create_app(config_class=DevelopmentConfig):
     def qa_management():
         qas = current_user.customer_data.qas.order_by(QA.id.desc()).all()
         return render_template('qa_management.html', qas=qas, user=current_user)
+
+    @app.route('/generate-qas-from-url', methods=['POST'])
+    @login_required
+    def generate_qas_from_url():
+        url = request.form.get('url')
+        if not url:
+            flash('URLを入力してください。', 'danger')
+            return redirect(url_for('qa_management'))
+
+        try:
+            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
+            response = requests.get(url, headers=headers, timeout=10)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.content, 'html.parser')
+            
+            for script in soup(["script", "style", "header", "footer", "nav", "aside"]):
+                script.extract()
+            
+            text_content = soup.get_text(separator='\n', strip=True)
+            
+            if not text_content:
+                flash('URLからテキストを抽出できませんでした。', 'warning')
+                return redirect(url_for('qa_management'))
+
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            prompt = f"""以下のウェブサイトのテキストから、ユーザーが尋ねそうな質問とそれに対する回答のペアを5つ生成してください。
+            各ペアは "Q: [質問]\nA: [回答]" の形式で、ペア間は改行2つで区切ってください。
+
+            ウェブサイトのテキスト:
+            ---
+            {text_content[:4000]}
+            ---
+            """
+            ai_response = model.generate_content(prompt)
+            
+            generated_qas = []
+            qa_blocks = ai_response.text.strip().split('\n\n')
+            for block in qa_blocks:
+                q_match = re.search(r'Q: (.*)', block)
+                a_match = re.search(r'A: (.*)', block, re.DOTALL)
+                if q_match and a_match:
+                    generated_qas.append({'question': q_match.group(1).strip(), 'answer': a_match.group(1).strip()})
+
+            if not generated_qas:
+                flash('AIがQ&Aを生成できませんでした。別のURLを試すか、テキストが十分にあるページを指定してください。', 'warning')
+                return redirect(url_for('qa_management'))
+
+            return render_template('qa_generate_result.html', generated_qas=generated_qas)
+
+        except requests.RequestException as e:
+            flash(f'URLへのアクセスに失敗しました: {e}', 'danger')
+            return redirect(url_for('qa_management'))
+        except Exception as e:
+            flash(f'Q&A生成中に予期せぬエラーが発生しました: {e}', 'danger')
+            return redirect(url_for('qa_management'))
+
+    @app.route('/save-generated-qas', methods=['POST'])
+    @login_required
+    def save_generated_qas():
+        customer_data = current_user.customer_data
+        selected_indices = request.form.getlist('selected_qa')
+        
+        saved_count = 0
+        limit_reached = False
+        
+        for index in selected_indices:
+            if not current_user.is_admin and customer_data.plan != 'professional':
+                if customer_data.qas.count() + saved_count >= 100:
+                    limit_reached = True
+                    break
+            
+            question = request.form.get(f'question_{index}', '').strip()
+            answer = request.form.get(f'answer_{index}', '').strip()
+
+            if question and answer:
+                new_qa = QA(question=question, answer=answer, customer_data=customer_data)
+                db.session.add(new_qa)
+                saved_count += 1
+        
+        if saved_count > 0:
+            db.session.commit()
+            _regenerate_knowledge_file(customer_data)
+            flash(f'{saved_count}件のQ&Aを保存しました。', 'success')
+        else:
+            flash('保存するQ&Aが選択されていません。', 'info')
+
+        if limit_reached:
+            flash('スタータープランのQ&A登録上限数（100件）に達したため、一部のQ&Aが保存されませんでした。', 'warning')
+            
+        return redirect(url_for('qa_management'))
 
     @app.route('/qa/add', methods=['POST'])
     @login_required
@@ -468,10 +562,8 @@ def create_app(config_class=DevelopmentConfig):
         
         example_questions = []
         if demo_customer:
-            # プロフェッショナルプランの条件、または管理者の条件で質問例を取得
             if demo_customer.plan == 'professional' or (demo_customer.user and demo_customer.user.is_admin):
                 example_questions = demo_customer.example_questions.order_by(ExampleQuestion.id.asc()).all()
-            # スタータープランの場合は5件まで
             elif demo_customer.plan == 'starter':
                  example_questions = demo_customer.example_questions.order_by(ExampleQuestion.id.asc()).limit(5).all()
 
@@ -481,7 +573,7 @@ def create_app(config_class=DevelopmentConfig):
             stripe_pro_price_id=stripe_pro_price_id,
             demo_public_id=demo_public_id,
             chatbot_settings=demo_customer,
-            example_questions=example_questions # 質問例をテンプレートに渡す
+            example_questions=example_questions
         )
 
     @app.route('/terms')

@@ -54,6 +54,8 @@ class CustomerData(db.Model):
     bot_name = db.Column(db.String(100), default='My Chatbot')
     welcome_message = db.Column(db.String(500), default='こんにちは！何かご質問はありますか？')
     header_color = db.Column(db.String(7), default='#0ea5e9')
+    user_message_color = db.Column(db.String(7), nullable=False, default='#3b5998')
+    bot_message_color = db.Column(db.String(7), nullable=False, default='#e9ecef')
     plan = db.Column(db.String(50), default='trial') 
     stripe_customer_id = db.Column(db.String(255), nullable=True)
     trial_ends_at = db.Column(db.DateTime, nullable=True)
