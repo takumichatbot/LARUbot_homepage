@@ -88,14 +88,12 @@
         }
 
         .bot-message {
-            /* background-color はJSで動的に設定 */
             color: #333;
             align-self: flex-start;
             border-bottom-left-radius: 5px;
         }
 
         .user-message {
-            /* background-color はJSで動的に設定 */
             color: #ffffff;
             align-self: flex-end;
             border-bottom-right-radius: 5px;
@@ -143,7 +141,6 @@
         .chat-button {
             width: 64px;
             height: 64px;
-            background-color: #3b5998;
             color: #fff;
             border-radius: 50%;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -158,7 +155,7 @@
 
         .chat-button:hover {
             transform: scale(1.1);
-            background-color: #324a81;
+            filter: brightness(90%);
         }
         
         .example-questions-container {
@@ -238,6 +235,18 @@
         .carousel-action-btn:hover {
             background-color: #324a81;
         }
+
+        /* ▼▼▼ フォントサイズ用のCSS ▼▼▼ */
+        .font-size-small .message, .font-size-small .example-btn, .font-size-small .chatbot-input input {
+            font-size: 0.8rem;
+        }
+        .font-size-medium .message, .font-size-medium .example-btn, .font-size-medium .chatbot-input input {
+            font-size: 0.9em; /* 標準を少し調整 */
+        }
+        .font-size-large .message, .font-size-large .example-btn, .font-size-large .chatbot-input input {
+            font-size: 1.05em; /* 標準を少し調整 */
+        }
+        /* ▲▲▲ ここまで ▲▲▲ */
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -494,7 +503,7 @@
 </footer>
 
 <div class="chat-container">
-    <div id="chat-iframe-wrapper" class="chat-iframe-container hidden">
+    <div id="chat-iframe-wrapper" class="chat-iframe-container hidden font-size-{{ chatbot_settings.font_size | default('medium', true) }}">
         <div class="chatbot-header" style="background-color: {{ chatbot_settings.header_color | default('#2c3e50', true) }};">
             {{ chatbot_settings.bot_name | default('LARUbot', true) }}
         </div>
@@ -515,13 +524,14 @@
             <button id="send-btn">送信</button>
         </div>
     </div>
-    <button id="chat-toggle-button" class="chat-button">
-        <i id="chat-icon" class="fas fa-comments"></i>
+    <button id="chat-toggle-button" class="chat-button" style="background-color: {{ chatbot_settings.chat_button_color | default('#3b5998', true) }};">
+        <i id="chat-icon" class="{{ chatbot_settings.chat_button_icon | default('fas fa-comments', true) }}"></i>
     </button>
 </div>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // --- ページ全体の基本スクリプト ---
+    // (省略しません)
     const mobileMenuButton = document.getElementById('mobile-menu-button');
     const mobileMenu = document.getElementById('mobile-menu');
     if (mobileMenuButton && mobileMenu) {
@@ -615,7 +625,7 @@ document.addEventListener('DOMContentLoaded', () => {
             chatWindow.classList.toggle('hidden');
             if (chatWindow.classList.contains('hidden')) {
                 chatIcon.classList.remove('fa-times');
-                chatIcon.classList.add('fa-comments');
+                chatIcon.className = "{{ chatbot_settings.chat_button_icon | default('fas fa-comments', true) }}";
             } else {
                 chatIcon.classList.remove('fa-comments');
                 chatIcon.classList.add('fa-times');
@@ -636,6 +646,42 @@ document.addEventListener('DOMContentLoaded', () => {
         sessionId = Date.now().toString() + Math.random().toString(36).substring(2);
         sessionStorage.setItem('chatbot_session_id', sessionId);
     }
+
+    const renderCarousel = (items) => {
+        const carouselContainer = document.createElement('div');
+        carouselContainer.className = 'carousel-container';
+
+        items.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'carousel-card';
+
+            let imageHtml = '';
+            if (item.image_url) {
+                imageHtml = `<img src="${item.image_url}" alt="${item.title}">`;
+            }
+
+            card.innerHTML = `
+                ${imageHtml}
+                <div class="carousel-card-content">
+                    <h4>${item.title}</h4>
+                    <p>${item.description}</p>
+                    <button class="carousel-action-btn" data-title="${item.title}">${item.action_text || 'これにする'}</button>
+                </div>
+            `;
+            carouselContainer.appendChild(card);
+        });
+
+        messagesContainer.appendChild(carouselContainer);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+        carouselContainer.querySelectorAll('.carousel-action-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                const title = button.dataset.title;
+                userInput.value = title + "を選択しました。";
+                handleSendMessage();
+            });
+        });
+    };
 
     const handleSendMessage = async () => {
         const text = userInput.value.trim();
@@ -667,15 +713,30 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const data = await response.json();
-            const botReply = data.reply;
+            let botReply = data.reply;
 
             document.getElementById('loading-indicator')?.remove();
-
-            const botMessageDiv = document.createElement('div');
-            botMessageDiv.className = 'message bot-message';
-            botMessageDiv.textContent = botReply;
-            botMessageDiv.style.backgroundColor = botBubbleColor;
-            messagesContainer.appendChild(botMessageDiv);
+            
+            if (botReply.startsWith('[CAROUSEL]')) {
+                try {
+                    const jsonString = botReply.replace('[CAROUSEL]', '').trim();
+                    const items = JSON.parse(jsonString);
+                    renderCarousel(items);
+                } catch (e) {
+                    console.error("カルーセルの解析に失敗:", e);
+                    const botMessageDiv = document.createElement('div');
+                    botMessageDiv.className = 'message bot-message';
+                    botMessageDiv.textContent = "メニューの表示に失敗しました。";
+                    botMessageDiv.style.backgroundColor = botBubbleColor;
+                    messagesContainer.appendChild(botMessageDiv);
+                }
+            } else {
+                const botMessageDiv = document.createElement('div');
+                botMessageDiv.className = 'message bot-message';
+                botMessageDiv.textContent = botReply;
+                botMessageDiv.style.backgroundColor = botBubbleColor;
+                messagesContainer.appendChild(botMessageDiv);
+            }
 
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
 

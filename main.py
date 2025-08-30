@@ -285,6 +285,9 @@ def create_app(config_class=DevelopmentConfig):
             customer_data.header_color = request.form.get('header_color', '#0ea5e9')
             customer_data.user_message_color = request.form.get('user_message_color', '#3b5998')
             customer_data.bot_message_color = request.form.get('bot_message_color', '#e9ecef')
+            customer_data.chat_button_color = request.form.get('chat_button_color', '#3b5998')
+            customer_data.chat_button_icon = request.form.get('chat_button_icon', 'fas fa-comments').strip()
+            customer_data.font_size = request.form.get('font_size', 'medium')
             customer_data.line_channel_token = request.form.get('line_channel_token', '').strip()
             customer_data.line_channel_secret = request.form.get('line_channel_secret', '').strip()
             customer_data.enable_weekly_report = 'enable_weekly_report' in request.form
@@ -412,13 +415,12 @@ def create_app(config_class=DevelopmentConfig):
             flash('質問と回答の両方を入力してください。', 'danger')
         return redirect(url_for('qa_management'))
 
-    # ▼▼▼ ここからが新しい関数 ▼▼▼
     @app.route('/qa/edit/<int:qa_id>', methods=['POST'])
     @login_required
     def edit_qa(qa_id):
         qa_to_edit = QA.query.get_or_404(qa_id)
         if qa_to_edit.customer_data.user_id != current_user.id:
-            abort(403) # 権限がない場合はエラー
+            abort(403)
 
         new_question = request.form.get('question', '').strip()
         new_answer = request.form.get('answer', '').strip()
@@ -433,7 +435,6 @@ def create_app(config_class=DevelopmentConfig):
             flash('質問と回答の両方を入力してください。', 'danger')
         
         return redirect(url_for('qa_management'))
-    # ▲▲▲ ここまで ▲▲▲
 
     @app.route('/qa/delete/<int:qa_id>', methods=['POST'])
     @login_required
